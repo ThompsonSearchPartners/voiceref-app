@@ -10,7 +10,7 @@ export async function sendReferenceInvitation(
 ) {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'VoiceRef <noreply@voiceref.com>',
+      from: 'VoiceRef <onboarding@resend.dev>',
       to: [referenceEmail],
       subject: `Reference Check Request for ${candidateName}`,
       html: `
