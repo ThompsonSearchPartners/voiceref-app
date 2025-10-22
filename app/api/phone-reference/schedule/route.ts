@@ -40,7 +40,7 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-      name: `Ref Check - ${referenceName}`,
+        name: `Ref Check - ${referenceName}`,
         model: { provider: 'openai', model: 'gpt-4', temperature: 0.7, systemPrompt },
         voice: { provider: 'openai', voiceId: 'alloy' },
         firstMessage: `Hi ${referenceName}, this is an automated reference check system calling on behalf of ${candidateName || 'a candidate'}'s job application. Do you have about 10 to 15 minutes to speak with me?`,
@@ -51,18 +51,19 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
       })
     });
 
-   if (!assistantResponse.ok) {
-  const errorText = await assistantResponse.text();
-  console.error('Vapi assistant creation failed:', assistantResponse.status, errorText);
-  throw new Error(`Failed to create Vapi assistant: ${assistantResponse.status} - ${errorText}`);
-}
+    if (!assistantResponse.ok) {
+      const errorText = await assistantResponse.text();
+      console.error('Vapi assistant creation failed:', assistantResponse.status, errorText);
+      throw new Error(`Failed to create Vapi assistant: ${assistantResponse.status} - ${errorText}`);
+    }
+    
     const assistant = await assistantResponse.json();
 
-    // Store in database
+    // Store in database - call will be triggered by cron job at scheduled time
     const { data: phoneCheck, error: dbError } = await supabase
       .from('phone_reference_checks')
       .insert({
-       reference_check_id: null,
+        reference_check_id: null,
         reference_name: referenceName,
         reference_phone: formattedPhone,
         reference_email: referenceEmail,
@@ -73,44 +74,22 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
       .select()
       .single();
 
-   if (dbError) {
-  console.error('Database insert error:', JSON.stringify(dbError, null, 2));
-  return NextResponse.json({ 
-    error: 'Failed to create phone reference check',
-    details: dbError.message 
-  }, { status: 500 });
-}
-console.log('VAPI_PHONE_NUMBER_ID:', process.env.VAPI_PHONE_NUMBER_ID);
-const callResponse = await fetch('https://api.vapi.ai/call/phone', {
-  method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        assistantId: assistant.id,
-        customer: { number: formattedPhone, name: referenceName },
-        phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-      })
+    if (dbError) {
+      console.error('Database insert error:', JSON.stringify(dbError, null, 2));
+      return NextResponse.json({ 
+        error: 'Failed to create phone reference check',
+        details: dbError.message 
+      }, { status: 500 });
+    }
+
+    // Call will be triggered by cron job at the scheduled time
+    // No immediate Vapi call - the /api/cron/trigger-calls endpoint handles this
+
+    return NextResponse.json({ 
+      success: true, 
+      phoneReferenceCheckId: phoneCheck.id, 
+      scheduledTime 
     });
-
-if (!callResponse.ok) {
-  const errorText = await callResponse.text();
-  console.error('Vapi call scheduling failed:', callResponse.status, errorText);
-  throw new Error(`Failed to schedule Vapi call: ${callResponse.status} - ${errorText}`);
-}
-
-
-
-
-    const call = await callResponse.json();
-
-    await supabase
-      .from('phone_reference_checks')
-      .update({ vapi_call_id: call.id })
-      .eq('id', phoneCheck.id);
-
-    return NextResponse.json({ success: true, phoneReferenceCheckId: phoneCheck.id, callId: call.id, scheduledTime });
   } catch (error: any) {
     console.error('Error scheduling call:', error);
     return NextResponse.json({ error: error.message || 'Failed to schedule call' }, { status: 500 });
