@@ -1,8 +1,2 @@
 {
-  "crons": [
-    {
-      "path": "/api/trigger-scheduled-calls",
-      "schedule": "0 * * * *"
-    }
-  ]
 }
