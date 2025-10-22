@@ -80,7 +80,9 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
     details: dbError.message 
   }, { status: 500 });
 }
+console.log('VAPI_PHONE_NUMBER_ID:', process.env.VAPI_PHONE_NUMBER_ID);
 
+const callResponse = await fetch('https://api.vapi.ai/call/phone', {
     // Schedule call with Vapi
     const callResponse = await fetch('https://api.vapi.ai/call/phone', {
       method: 'POST',
