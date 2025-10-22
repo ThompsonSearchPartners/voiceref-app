@@ -1,6 +1,5 @@
-<h1 className="text-3xl font-bold">Phone Reference Check Test Page</h1>
-import PhoneReferenceScheduler from '@/components/PhoneReferenceScheduler'
-import PhoneReferenceStatus from '@/components/PhoneReferenceStatus'
+import PhoneReferenceScheduler from '@/app/components/PhoneReferenceScheduler'
+import PhoneReferenceStatus from '@/app/components/PhoneReferenceStatus'
 
 export default function TestPhonePage() {
   const testReferenceCheckId = 'test-123' // Replace with real ID later
