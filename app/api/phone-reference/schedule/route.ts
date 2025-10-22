@@ -81,11 +81,8 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
   }, { status: 500 });
 }
 console.log('VAPI_PHONE_NUMBER_ID:', process.env.VAPI_PHONE_NUMBER_ID);
-
 const callResponse = await fetch('https://api.vapi.ai/call/phone', {
-    // Schedule call with Vapi
-    const callResponse = await fetch('https://api.vapi.ai/call/phone', {
-      method: 'POST',
+  method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
         'Content-Type': 'application/json'
