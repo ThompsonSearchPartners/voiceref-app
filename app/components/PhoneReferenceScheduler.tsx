@@ -50,25 +50,20 @@ export default function PhoneReferenceScheduler({
       setError('Please select a date and time');
       return false;
     }
-
     const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
     if (scheduledDateTime < new Date()) {
       setError('Scheduled time must be in the future');
       return false;
     }
-
     return true;
   };
 
   const handleSchedule = async () => {
     setError('');
-    
     if (!validateForm()) return;
-
     setLoading(true);
     try {
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
-
       const response = await fetch('/api/phone-reference/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,17 +77,12 @@ export default function PhoneReferenceScheduler({
           candidateName,
         }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || 'Failed to schedule call');
       }
-
       setSuccess(true);
       if (onScheduled) onScheduled();
-
-      // Reset form after 2 seconds
       setTimeout(() => {
         setReferenceName('');
         setReferencePhone('');
@@ -108,7 +98,6 @@ export default function PhoneReferenceScheduler({
     }
   };
 
-  // Get minimum date/time (1 hour from now)
   const getMinDateTime = () => {
     const now = new Date();
     now.setHours(now.getHours() + 1);
@@ -134,7 +123,7 @@ export default function PhoneReferenceScheduler({
       {success && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-green-800 font-medium">
-            ✓ Call scheduled successfully! The reference will receive a call at the scheduled time.
+            ✓ Call scheduled successfully!
           </p>
         </div>
       )}
@@ -175,7 +164,6 @@ export default function PhoneReferenceScheduler({
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={loading}
           />
-          <p className="mt-1 text-xs text-gray-500">US phone number</p>
         </div>
 
         <div>
