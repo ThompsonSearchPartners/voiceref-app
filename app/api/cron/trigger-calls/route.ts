@@ -9,11 +9,20 @@ const supabase = createClient(
 export async function GET(request: Request) {
   try {
     // Verify cron secret for security
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+   const authHeader = request.headers.get('authorization');
+console.log('Received auth header:', authHeader);
+console.log('Expected auth:', `Bearer ${process.env.CRON_SECRET}`);
+console.log('CRON_SECRET env var:', process.env.CRON_SECRET);
 
+if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  return NextResponse.json({ 
+    error: 'Unauthorized',
+    debug: {
+      received: authHeader,
+      expected: `Bearer ${process.env.CRON_SECRET}`
+    }
+  }, { status: 401 });
+}
     // Find calls scheduled for the next 10 minutes
     const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     const now = new Date().toISOString();
