@@ -15,15 +15,14 @@ export async function sendReferenceInvitation(
       subject: `Reference Check Request for ${candidateName}`,
       html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"><h2>Reference Check Request</h2><p>Dear ${referenceName},</p><p>You've been selected as a reference for <strong>${candidateName}</strong>.</p><p>Please choose your preferred method:</p><div style="text-align: center; margin: 30px 0;"><a href="${interviewLink}" style="background-color: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 10px;">Complete Online Now</a><br><a href="${interviewLink}/schedule" style="background-color: #059669; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 10px;">Schedule Phone Call</a></div><p><strong>Online:</strong> 10 min using voice or text</p><p><strong>Phone:</strong> We'll call you at your preferred time (5 min)</p><p>Thank you,<br>VoiceRef Team</p></div>`
     })
-
+    
     if (error) {
       throw error
     }
-
+    
     return { success: true, messageId: data?.id }
   } catch (error) {
     console.error('Email error:', error)
     return { success: false, error: 'Failed to send email' }
   }
-}
 }
