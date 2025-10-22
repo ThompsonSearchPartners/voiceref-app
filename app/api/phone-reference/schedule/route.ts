@@ -92,7 +92,6 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
         assistantId: assistant.id,
         customer: { number: formattedPhone, name: referenceName },
         phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-        scheduledFor: new Date(scheduledTime).toISOString()
       })
     });
 
