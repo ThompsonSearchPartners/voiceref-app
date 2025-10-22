@@ -73,9 +73,13 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
       .select()
       .single();
 
-    if (dbError) {
-      return NextResponse.json({ error: 'Failed to create phone reference check' }, { status: 500 });
-    }
+   if (dbError) {
+  console.error('Database insert error:', JSON.stringify(dbError, null, 2));
+  return NextResponse.json({ 
+    error: 'Failed to create phone reference check',
+    details: dbError.message 
+  }, { status: 500 });
+}
 
     // Schedule call with Vapi
     const callResponse = await fetch('https://api.vapi.ai/call/phone', {
