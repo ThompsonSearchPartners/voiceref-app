@@ -42,7 +42,7 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
       body: JSON.stringify({
       name: `Ref Check - ${referenceName}`,
         model: { provider: 'openai', model: 'gpt-4', temperature: 0.7, systemPrompt },
-        voice: { provider: '11labs', voiceId: 'rachel' },
+        voice: { provider: 'openai', voiceId: 'alloy' },
         firstMessage: `Hi ${referenceName}, this is an automated reference check system calling on behalf of ${candidateName || 'a candidate'}'s job application. Do you have about 10 to 15 minutes to speak with me?`,
         recordingEnabled: true,
         endCallFunctionEnabled: true,
