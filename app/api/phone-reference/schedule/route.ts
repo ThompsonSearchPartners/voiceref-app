@@ -96,9 +96,15 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
       })
     });
 
-    if (!callResponse.ok) {
-      throw new Error('Failed to schedule Vapi call');
-    }
+if (!callResponse.ok) {
+  const errorText = await callResponse.text();
+  console.error('Vapi call scheduling failed:', callResponse.status, errorText);
+  throw new Error(`Failed to schedule Vapi call: ${callResponse.status} - ${errorText}`);
+}
+
+
+
+
     const call = await callResponse.json();
 
     await supabase
