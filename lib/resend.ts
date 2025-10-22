@@ -26,3 +26,4 @@ export async function sendReferenceInvitation(
     return { success: false, error: 'Failed to send email' }
   }
 }
+}
