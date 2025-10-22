@@ -62,7 +62,7 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
     const { data: phoneCheck, error: dbError } = await supabase
       .from('phone_reference_checks')
       .insert({
-        reference_check_id: referenceCheckId,
+       reference_check_id: null,
         reference_name: referenceName,
         reference_phone: formattedPhone,
         reference_email: referenceEmail,
