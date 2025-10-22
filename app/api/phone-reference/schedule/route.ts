@@ -51,9 +51,11 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
       })
     });
 
-    if (!assistantResponse.ok) {
-      throw new Error('Failed to create Vapi assistant');
-    }
+   if (!assistantResponse.ok) {
+  const errorText = await assistantResponse.text();
+  console.error('Vapi assistant creation failed:', assistantResponse.status, errorText);
+  throw new Error(`Failed to create Vapi assistant: ${assistantResponse.status} - ${errorText}`);
+}
     const assistant = await assistantResponse.json();
 
     // Store in database
