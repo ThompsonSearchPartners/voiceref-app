@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     console.log('=== WEBHOOK CALLED ===');
     
     const payload = await request.text();
+    console.log('Raw payload:', payload);
     
     // Vapi sends the secret directly in x-vapi-secret header
     const vapiSecret = request.headers.get('x-vapi-secret');
