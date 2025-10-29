@@ -8,119 +8,68 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== WEBHOOK CALLED ===');
-    
-    const payload = await request.text();
-    console.log('Raw payload:', payload);
-    
-    // Vapi sends the secret directly in x-vapi-secret header
+    // Get secret from header
     const vapiSecret = request.headers.get('x-vapi-secret');
-    
     if (vapiSecret !== process.env.VAPI_WEBHOOK_SECRET) {
-      console.error('Invalid webhook secret. Expected:', process.env.VAPI_WEBHOOK_SECRET, 'Got:', vapiSecret);
       return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
     }
     
-    const event = JSON.parse(payload);
-    console.log('Vapi webhook event:', event.type, 'for call:', event.call?.id);
+    // Parse body - handle both text and JSON
+    let event;
+    try {
+      event = await request.json(); // Try JSON first
+    } catch {
+      const text = await request.text();
+      event = JSON.parse(text); // Fallback to text
+    }
 
-    switch (event.type) {
-      case 'call.started':
-        console.log('Handling call.started');
-        await supabase
-          .from('phone_reference_checks')
-          .update({ 
-            call_status: 'in_progress', 
-            vapi_call_id: event.call.id 
-          })
-          .eq('vapi_assistant_id', event.call.assistantId);
-        break;
-        
-      case 'call.ended':
-        console.log('Handling call.ended, fetching transcript from Vapi...');
-        
-        const callResponse = await fetch(`https://api.vapi.ai/call/${event.call.id}`, {
-          headers: { 
-            'Authorization': `Bearer ${process.env.VAPI_API_KEY}` 
-          }
-        });
-        
-        if (!callResponse.ok) {
-          console.error('Failed to fetch call details from Vapi:', callResponse.status);
-          break;
-        }
-        
+    const eventType = event.type || event.message?.type;
+    const call = event.call || event.message?.call;
+    
+    if (!call?.id) {
+      return NextResponse.json({ received: true }); // Ignore events without call
+    }
+
+    // Handle call.ended - the only one we care about
+    if (eventType === 'call.ended' || eventType === 'end-of-call-report') {
+      // Fetch full transcript from Vapi
+      const callResponse = await fetch(`https://api.vapi.ai/call/${call.id}`, {
+        headers: { Authorization: `Bearer ${process.env.VAPI_API_KEY}` }
+      });
+      
+      if (callResponse.ok) {
         const callData = await callResponse.json();
-        console.log('Got call data, duration:', callData.duration);
         
-        // Update phone reference check
-        const { data: phoneCheck, error: updateError } = await supabase
+        // Update database
+        const { data: phoneCheck } = await supabase
           .from('phone_reference_checks')
           .update({
             call_status: 'completed',
-            call_duration_seconds: callData.duration,
+            call_duration_seconds: callData.duration || 0,
             recording_url: callData.recordingUrl,
             transcript: callData.transcript
           })
-          .eq('vapi_call_id', event.call.id)
+          .eq('vapi_call_id', call.id)
           .select()
           .single();
           
-        if (updateError) {
-          console.error('Error updating phone check:', updateError);
-          break;
-        }
-        
-        if (phoneCheck) {
-          console.log('Updated phone check:', phoneCheck.id);
-          
-          // Extract and save transcript text
-          const transcriptText = (callData.transcript || [])
-            .map((t: any) => {
-              const speaker = t.role === 'assistant' ? 'AI' : 'Reference';
-              const content = t.content || t.text || '';
-              return `${speaker}: ${content}`;
-            })
+        // Save transcript
+        if (phoneCheck && callData.transcript) {
+          const transcriptText = callData.transcript
+            .map((t: any) => `${t.role === 'assistant' ? 'AI' : 'Reference'}: ${t.content || t.text || ''}`)
             .join('\n\n');
             
-          const { error: transcriptError } = await supabase
-            .from('call_transcripts')
-            .insert({
-              phone_reference_check_id: phoneCheck.id,
-              transcript_text: transcriptText,
-              transcript_json: callData.transcript
-            });
-            
-          if (transcriptError) {
-            console.error('Error saving transcript:', transcriptError);
-          } else {
-            console.log('Successfully saved transcript');
-          }
+          await supabase.from('call_transcripts').insert({
+            phone_reference_check_id: phoneCheck.id,
+            transcript_text: transcriptText,
+            transcript_json: callData.transcript
+          });
         }
-        break;
-        
-      case 'call.failed':
-        console.log('Handling call.failed');
-        await supabase
-          .from('phone_reference_checks')
-          .update({ call_status: 'failed' })
-          .eq('vapi_call_id', event.call.id);
-        break;
-        
-      default:
-        console.log('Unhandled event type:', event.type);
+      }
     }
     
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Webhook error:', error);
-    return NextResponse.json({ 
-      error: 'Webhook processing failed',
-      details: String(error)
-    }, { status: 500 });
+    return NextResponse.json({ received: true }); // Always return 200
   }
-}
-
-export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json({}, { status: 200 });
 }
