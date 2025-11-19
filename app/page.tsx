@@ -232,30 +232,11 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
     setStep(2)
   }
 
-  const handleProceedToSchedule = async () => {
-    // Create reference check in database first
-    try {
-      const response = await fetch('/api/reference-checks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          candidate: candidateData,
-          reference: currentReference
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setReferenceCheckId(data.id)
-        setStep(3) // Go to phone scheduler
-      } else {
-        alert('Error creating reference check')
-      }
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Error submitting form')
-    }
-  }
+  const handleProceedToSchedule = () => {
+  // Just move to next step - the phone scheduler will create the check
+  setReferenceCheckId('temp-' + Date.now()) // Temporary ID
+  setStep(3)
+}
 
   if (step === 4) {
     return (
