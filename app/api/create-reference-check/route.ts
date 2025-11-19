@@ -175,7 +175,7 @@ async function sendReferenceEmail({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'VoiceRef <noreply@voiceref.com>',
+        from: 'VoiceRef <onboarding@resend.dev>',
         to: referenceEmail,
         subject: emailSubject,
         html: emailBody,
