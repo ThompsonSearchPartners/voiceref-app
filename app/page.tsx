@@ -213,7 +213,6 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false)
   const [candidateData, setCandidateData] = useState({
     name: '',
-    email: '',
     position: '',
     jobDescription: '',
     hiringManager: '',
@@ -260,7 +259,7 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
         <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
         <h3 className="text-2xl font-bold mb-4">Email Sent!</h3>
         <p className="text-gray-600 mb-6">
-          We've sent an email to <strong>{currentReference.email}</strong> with a link to schedule their phone interview.
+          We've sent an email to <strong>{currentReference.email}</strong> with a link to schedule their phone reference check.
         </p>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 text-left">
           <h4 className="font-semibold text-blue-900 mb-2">What happens next:</h4>
@@ -292,14 +291,7 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
               placeholder="Candidate Name"
               value={candidateData.name}
               onChange={(e) => setCandidateData({...candidateData, name: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="email"
-              placeholder="Candidate Email"
-              value={candidateData.email}
-              onChange={(e) => setCandidateData({...candidateData, email: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 md:col-span-2"
             />
             <input
               type="text"
@@ -404,7 +396,7 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
                   <p className="text-sm font-medium text-blue-900 mb-1">How it works:</p>
                   <p className="text-sm text-blue-800">
                     We'll email {currentReference.name || 'the reference'} a secure link where they can schedule 
-                    their own phone interview time. Our AI will then call them at their chosen time with 
+                    their own phone reference check. Our AI will then call them at their chosen time with 
                     custom questions based on your job description.
                   </p>
                 </div>
