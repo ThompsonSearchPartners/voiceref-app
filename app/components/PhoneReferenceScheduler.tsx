@@ -8,6 +8,9 @@ interface PhoneReferenceSchedulerProps {
   questions: string[];
   candidateName?: string;
   onScheduled?: () => void;
+  defaultName?: string;
+  defaultPhone?: string;
+  defaultEmail?: string;
 }
 
 export default function PhoneReferenceScheduler({
@@ -15,10 +18,13 @@ export default function PhoneReferenceScheduler({
   questions,
   candidateName = 'the candidate',
   onScheduled,
+  defaultName = '',
+  defaultPhone = '',
+  defaultEmail = '',
 }: PhoneReferenceSchedulerProps) {
-  const [referenceName, setReferenceName] = useState('');
-  const [referencePhone, setReferencePhone] = useState('');
-  const [referenceEmail, setReferenceEmail] = useState('');
+  const [referenceName, setReferenceName] = useState(defaultName);
+  const [referencePhone, setReferencePhone] = useState(defaultPhone);
+  const [referenceEmail, setReferenceEmail] = useState(defaultEmail);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [loading, setLoading] = useState(false);
@@ -90,7 +96,7 @@ export default function PhoneReferenceScheduler({
         setScheduledDate('');
         setScheduledTime('');
         setSuccess(false);
-      }, 2000);
+      }, 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to schedule call');
     } finally {
@@ -116,7 +122,7 @@ export default function PhoneReferenceScheduler({
           Schedule Phone Reference Check
         </h3>
         <p className="text-gray-600">
-          An AI-powered call will be scheduled to interview the reference about {candidateName}.
+          An AI-powered call will be scheduled to interview you about {candidateName}.
         </p>
       </div>
 
@@ -248,7 +254,7 @@ export default function PhoneReferenceScheduler({
       </div>
 
       <div className="mt-6 text-xs text-gray-500 space-y-1">
-        <p>• The reference will receive an automated call at the scheduled time</p>
+        <p>• You will receive an automated call at the scheduled time</p>
         <p>• Call duration: approximately 10-15 minutes</p>
         <p>• Full transcript will be available after the call</p>
       </div>
