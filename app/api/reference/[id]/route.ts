@@ -1,56 +1,72 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../../lib/supabase'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get reference details
-    const { data: reference, error: refError } = await supabase
-      .from('reference_contacts')
+    const referenceId = params.id;
+
+    // Get reference with related reference check and questions
+    const { data: reference, error } = await supabase
+      .from('references')
       .select(`
         *,
-        reference_checks (candidate_name, position, id)
+        reference_checks!check_id (
+          id,
+          candidate_name,
+          position,
+          company,
+          job_description
+        )
       `)
-      .eq('id', params.id)
-      .single()
+      .eq('id', referenceId)
+      .single();
 
-    if (refError) {
-      throw refError
+    if (error || !reference) {
+      return NextResponse.json(
+        { error: 'Reference not found' },
+        { status: 404 }
+      );
     }
 
-    // Get custom questions for this reference check
-    const { data: questions, error: questionsError } = await supabase
-      .from('custom_questions')
+    // Check if reference is still active
+    if (reference.status === 'completed') {
+      return NextResponse.json(
+        { error: 'This reference check has already been completed' },
+        { status: 410 }
+      );
+    }
+
+    // Get questions for this reference check
+    const { data: questions } = await supabase
+      .from('questions')
       .select('*')
-      .eq('check_id', reference.reference_checks.id)
-      .order('order_num', { ascending: true })
-
-    if (questionsError) {
-      console.error('Questions error:', questionsError)
-      // If no custom questions, use default ones
-      const { data: defaultQuestions } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('active', true)
-        .order('order_num', { ascending: true })
-      
-      return NextResponse.json({
-        reference,
-        questions: defaultQuestions || []
-      })
-    }
+      .eq('check_id', reference.check_id)
+      .order('order_num');
 
     return NextResponse.json({
-      reference,
-      questions: questions || []
-    })
+      reference: {
+        ...reference,
+        reference_checks: {
+          candidate_name: reference.reference_checks?.candidate_name,
+          position: reference.reference_checks?.position,
+          company: reference.reference_checks?.company,
+        },
+      },
+      questions: questions || [],
+    });
   } catch (error) {
-    console.error('Reference lookup error:', error)
+    console.error('Error fetching reference:', error);
     return NextResponse.json(
-      { error: 'Reference not found' },
-      { status: 404 }
-    )
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
