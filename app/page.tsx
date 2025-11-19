@@ -261,29 +261,35 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
   }
 
   // Step 3: Phone Scheduler
-  if (step === 3 && referenceCheckId) {
-    return (
-      <div className="max-w-3xl mx-auto">
-        <button
-          onClick={() => setStep(2)}
-          className="text-sm text-gray-600 hover:text-gray-900 mb-4"
-        >
-          ← Back
-        </button>
+if (step === 3) {
+  return (
+    <div className="max-w-3xl mx-auto">
+      <button
+        onClick={() => setStep(2)}
+        className="text-sm text-gray-600 hover:text-gray-900 mb-4"
+      >
+        ← Back
+      </button>
 
-        <PhoneSchedulerWithCustomQuestions
-          referenceCheckId={referenceCheckId}
-          refereeName={currentReference.name}
-          refereeEmail={currentReference.email}
-          onScheduled={(data) => {
-            console.log('Phone call scheduled:', data)
-            setStep(4) // Go to success
-          }}
-        />
-      </div>
-    )
-  }
-
+      <PhoneSchedulerWithCustomQuestions
+        referenceCheckId={null}
+        refereeName={currentReference.name}
+        refereeEmail={currentReference.email}
+        refereePhone={currentReference.phone}
+        candidateName={candidateData.name}
+        candidateEmail={candidateData.email}
+        position={candidateData.position}
+        jobDescription={candidateData.jobDescription}
+        hiringManager={candidateData.hiringManager}
+        company={candidateData.company}
+        onScheduled={(data) => {
+          console.log('Phone call scheduled:', data)
+          setStep(4) // Go to success
+        }}
+      />
+    </div>
+  )
+}
   return (
     <div className="space-y-6">
       {step === 1 && (
