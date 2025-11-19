@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { Mic, Phone, Clock, Shield, Brain, CheckCircle, ArrowRight, Users, Star } from 'lucide-react'
+import PhoneSchedulerWithCustomQuestions from '@/components/PhoneSchedulerWithCustomQuestions'
 
 export default function Home() {
   const [showForm, setShowForm] = useState(false)
@@ -31,18 +32,17 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
-            AI-Powered Web Reference Checking
+            AI-Powered Phone Reference Checking
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Paste any job description and get custom AI-generated reference questions. 
-            References complete voice or text interviews online at their convenience, 
-            and you get detailed analysis tailored to your specific role requirements.
+            Paste any job description and our AI conducts professional phone interviews with your references. 
+            Automated, convenient, and tailored to your specific role requirements.
           </p>
           <button
             onClick={() => setShowForm(true)}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700 flex items-center mx-auto"
           >
-            Start Custom Reference Check - $149
+            Schedule Phone Reference Check - $149
             <ArrowRight className="w-5 h-5 ml-2" />
           </button>
         </div>
@@ -57,11 +57,11 @@ export default function Home() {
             </div>
             <div className="flex items-center">
               <Clock className="w-5 h-5 mr-1" />
-              <span className="text-gray-600">10x faster than email</span>
+              <span className="text-gray-600">10x faster turnaround</span>
             </div>
             <div className="flex items-center">
               <Users className="w-5 h-5 mr-1" />
-              <span className="text-gray-600">500+ interviews completed</span>
+              <span className="text-gray-600">500+ calls completed</span>
             </div>
           </div>
         </div>
@@ -79,10 +79,10 @@ export default function Home() {
 
           <div className="bg-white rounded-xl p-8 shadow-lg">
             <Phone className="w-12 h-12 text-blue-600 mb-4" />
-            <h3 className="text-xl font-semibold mb-3">Web-Based Interviews</h3>
+            <h3 className="text-xl font-semibold mb-3">Automated Phone Interviews</h3>
             <p className="text-gray-600">
-              References receive a secure link to complete the interview online. 
-              Voice or text responses, at their convenience, on any device.
+              Our AI calls references at scheduled times and conducts professional interviews. 
+              Natural conversation with intelligent follow-up questions.
             </p>
           </div>
 
@@ -105,28 +105,28 @@ export default function Home() {
                 <Brain className="w-8 h-8 text-purple-600" />
               </div>
               <h4 className="font-semibold mb-2">1. Paste Job Description</h4>
-              <p className="text-gray-600 text-sm">AI generates custom questions for the role</p>
+              <p className="text-gray-600 text-sm">AI generates custom interview questions</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-blue-600" />
+                <Clock className="w-8 h-8 text-blue-600" />
               </div>
-              <h4 className="font-semibold mb-2">2. Send Web Links</h4>
-              <p className="text-gray-600 text-sm">References get secure interview links via email</p>
+              <h4 className="font-semibold mb-2">2. Schedule Calls</h4>
+              <p className="text-gray-600 text-sm">Pick times for AI to call your references</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Phone className="w-8 h-8 text-green-600" />
               </div>
-              <h4 className="font-semibold mb-2">3. Complete Online</h4>
-              <p className="text-gray-600 text-sm">References answer questions at their convenience</p>
+              <h4 className="font-semibold mb-2">3. AI Conducts Interview</h4>
+              <p className="text-gray-600 text-sm">Professional phone interview at scheduled time</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-orange-600" />
               </div>
-              <h4 className="font-semibold mb-2">4. Get Tailored Report</h4>
-              <p className="text-gray-600 text-sm">Role-specific insights and recommendations</p>
+              <h4 className="font-semibold mb-2">4. Get Detailed Report</h4>
+              <p className="text-gray-600 text-sm">Transcript and role-specific insights</p>
             </div>
           </div>
         </div>
@@ -144,30 +144,30 @@ export default function Home() {
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                Up to 5 references per candidate
+                Automated phone interviews with up to 5 references
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                Web-based interviews (voice or text)
+                Professional AI interviewer with natural conversation
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                Role-specific sentiment analysis
+                Complete transcripts of all interviews
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                Professional report with tailored insights
+                Role-specific sentiment analysis and insights
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                48-hour turnaround
+                Detailed report within 24 hours
               </li>
             </ul>
             <button
               onClick={() => setShowForm(true)}
               className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg text-lg font-medium hover:bg-blue-700"
             >
-              Start Reference Check
+              Start Phone Reference Check
             </button>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function Home() {
         {/* CTA */}
         <div className="text-center">
           <h3 className="text-3xl font-bold text-gray-900 mb-4">Ready to transform your hiring process?</h3>
-          <p className="text-xl text-gray-600 mb-8">Join innovative recruiters using AI-powered reference checking</p>
+          <p className="text-xl text-gray-600 mb-8">Join innovative recruiters using AI-powered phone reference checking</p>
           <button
             onClick={() => setShowForm(true)}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700"
@@ -187,14 +187,14 @@ export default function Home() {
 
       {/* Reference Check Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold">Start Reference Check</h3>
+                <h3 className="text-2xl font-bold">Schedule Phone Reference Check</h3>
                 <button
                   onClick={() => setShowForm(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 text-3xl"
                 >
                   ×
                 </button>
@@ -219,52 +219,55 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
     hiringManager: '',
     company: ''
   })
-  const [references, setReferences] = useState([
-    { name: '', email: '', phone: '', relationship: '', company: '' }
-  ])
+  const [currentReference, setCurrentReference] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    relationship: '',
+    company: ''
+  })
+  const [referenceCheckId, setReferenceCheckId] = useState<string | null>(null)
 
-  const handleSubmit = async () => {
+  const handleSubmitJobDetails = () => {
+    setStep(2)
+  }
+
+  const handleProceedToSchedule = async () => {
+    // Create reference check in database first
     try {
       const response = await fetch('/api/reference-checks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           candidate: candidateData,
-          references: references
+          reference: currentReference
         })
       })
 
       if (response.ok) {
-        setStep(3) // Success step
+        const data = await response.json()
+        setReferenceCheckId(data.id)
+        setStep(3) // Go to phone scheduler
       } else {
         alert('Error creating reference check')
       }
     } catch (error) {
-      console.error('Submit error:', error)
+      console.error('Error:', error)
       alert('Error submitting form')
     }
   }
 
-  const addReference = () => {
-    setReferences([...references, { name: '', email: '', phone: '', relationship: '', company: '' }])
-  }
-
-  const updateReference = (index: number, field: string, value: string) => {
-    const updated = [...references]
-    updated[index] = { ...updated[index], [field]: value }
-    setReferences(updated)
-  }
-
-  if (step === 3) {
+  if (step === 4) {
     return (
-      <div className="text-center">
+      <div className="text-center py-8">
         <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-4">Reference Check Started!</h3>
+        <h3 className="text-2xl font-bold mb-4">Phone Call Scheduled!</h3>
         <p className="text-gray-600 mb-6">
-          We're sending invitations to your references and will begin the automated interviews as soon as they respond.
+          Our AI will call the reference at the scheduled time and conduct a professional interview 
+          based on your job description and custom questions.
         </p>
         <p className="text-sm text-gray-500 mb-6">
-          You'll receive email updates as interviews are completed and your final report will be ready within 48 hours.
+          You'll receive the full transcript and analysis report within 24 hours of the call completion.
         </p>
         <button
           onClick={onClose}
@@ -272,6 +275,30 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
         >
           Done
         </button>
+      </div>
+    )
+  }
+
+  // Step 3: Phone Scheduler
+  if (step === 3 && referenceCheckId) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <button
+          onClick={() => setStep(2)}
+          className="text-sm text-gray-600 hover:text-gray-900 mb-4"
+        >
+          ← Back
+        </button>
+
+        <PhoneSchedulerWithCustomQuestions
+          referenceCheckId={referenceCheckId}
+          refereeName={currentReference.name}
+          refereeEmail={currentReference.email}
+          onScheduled={(data) => {
+            console.log('Phone call scheduled:', data)
+            setStep(4) // Go to success
+          }}
+        />
       </div>
     )
   }
@@ -335,73 +362,76 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
           </div>
           
           <button
-            onClick={() => setStep(2)}
+            onClick={handleSubmitJobDetails}
             disabled={!candidateData.name || !candidateData.position || !candidateData.hiringManager || !candidateData.jobDescription}
             className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300"
           >
-            Next: Add References
+            Next: Add Reference Contact
           </button>
         </>
       )}
 
       {step === 2 && (
         <>
-          <h4 className="text-lg font-semibold">Reference Contacts</h4>
-          {references.map((ref, index) => (
-            <div key={index} className="border border-gray-200 rounded-lg p-4">
-              <h5 className="font-medium mb-3">Reference {index + 1}</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={ref.name}
-                  onChange={(e) => updateReference(index, 'name', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={ref.email}
-                  onChange={(e) => updateReference(index, 'email', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone"
-                  value={ref.phone}
-                  onChange={(e) => updateReference(index, 'phone', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <select
-                  value={ref.relationship}
-                  onChange={(e) => updateReference(index, 'relationship', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Relationship</option>
-                  <option value="Direct Manager">Direct Manager</option>
-                  <option value="Senior Manager">Senior Manager</option>
-                  <option value="Colleague">Colleague</option>
-                  <option value="Team Lead">Team Lead</option>
-                  <option value="HR Contact">HR Contact</option>
-                  <option value="Client">Client</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Company"
-                  value={ref.company}
-                  onChange={(e) => updateReference(index, 'company', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 md:col-span-2"
-                />
+          <h4 className="text-lg font-semibold">Reference Contact Information</h4>
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Reference Name *"
+                value={currentReference.name}
+                onChange={(e) => setCurrentReference({...currentReference, name: e.target.value})}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="email"
+                placeholder="Email *"
+                value={currentReference.email}
+                onChange={(e) => setCurrentReference({...currentReference, email: e.target.value})}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="tel"
+                placeholder="Phone Number *"
+                value={currentReference.phone}
+                onChange={(e) => setCurrentReference({...currentReference, phone: e.target.value})}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <select
+                value={currentReference.relationship}
+                onChange={(e) => setCurrentReference({...currentReference, relationship: e.target.value})}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Relationship *</option>
+                <option value="Direct Manager">Direct Manager</option>
+                <option value="Senior Manager">Senior Manager</option>
+                <option value="Colleague">Colleague</option>
+                <option value="Team Lead">Team Lead</option>
+                <option value="HR Contact">HR Contact</option>
+                <option value="Client">Client</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Company"
+                value={currentReference.company}
+                onChange={(e) => setCurrentReference({...currentReference, company: e.target.value})}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 md:col-span-2"
+              />
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Phone className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900 mb-1">How it works:</p>
+                  <p className="text-sm text-blue-800">
+                    You'll schedule a time on the next screen. Our AI will call this number at that time 
+                    and conduct a professional 10-15 minute interview with custom questions based on your job description.
+                  </p>
+                </div>
               </div>
             </div>
-          ))}
-          
-          <button
-            onClick={addReference}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            + Add Another Reference
-          </button>
+          </div>
           
           <div className="flex gap-3">
             <button
@@ -411,10 +441,12 @@ function ReferenceCheckForm({ onClose }: { onClose: () => void }) {
               Back
             </button>
             <button
-              onClick={handleSubmit}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+              onClick={handleProceedToSchedule}
+              disabled={!currentReference.name || !currentReference.email || !currentReference.phone || !currentReference.relationship}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 flex items-center justify-center gap-2"
             >
-              Start Reference Check - $149
+              <Phone className="w-5 h-5" />
+              Continue to Schedule Call
             </button>
           </div>
         </>
