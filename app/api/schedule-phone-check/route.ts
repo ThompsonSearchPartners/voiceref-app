@@ -1,25 +1,11 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-const VAPI_API_KEY = '22fe7d9a-288d-4946-a020-6aa8581bb251';
-const VAPI_PHONE_NUMBER_ID = '88a8d0a5-f407-4198-a1ab-8b9c5fd1a7b7';
-
-// STANDARD QUESTIONS - Always asked for every reference check
-const STANDARD_QUESTIONS = [
-  "How long did you work with this candidate?",
-  "What were their primary responsibilities in their role?",
-  "What were their key strengths?",
-  "What areas could they improve in?",
-  "How would you describe their work ethic and reliability?",
-  "Would you hire them again? Why or why not?",
-  "Is there anything else we should know about this candidate?"
-];
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,183 +14,237 @@ export async function POST(request: NextRequest) {
       referenceCheckId,
       phoneNumber,
       scheduledTime,
-      refereeEmail,
-      refereeName,
-      jobDescription, // NEW: optional job description
-      customQuestions, // NEW: optional array of custom questions
+      customQuestions = [],
+      candidateData,
+      referenceData,
     } = body;
 
     // Validate required fields
-    if (!referenceCheckId || !phoneNumber || !scheduledTime) {
+    if (!phoneNumber || !scheduledTime) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Phone number and scheduled time are required' },
         { status: 400 }
       );
     }
 
-    // Validate phone number format (should be +1XXXXXXXXXX)
-    if (!/^\+1\d{10}$/.test(phoneNumber)) {
+    let finalReferenceCheckId = referenceCheckId;
+
+    // If no referenceCheckId provided, create a new reference check
+    if (!finalReferenceCheckId && candidateData && referenceData) {
+      // First, create or get the reference check record
+      const { data: checkData, error: checkError } = await supabase
+        .from('reference_checks')
+        .insert({
+          candidate_name: candidateData.name,
+          candidate_email: candidateData.email,
+          position: candidateData.position,
+          job_description: candidateData.jobDescription,
+          hiring_manager: candidateData.hiringManager,
+          company: candidateData.company,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (checkError) {
+        console.error('Error creating reference check:', checkError);
+        return NextResponse.json(
+          { error: 'Failed to create reference check' },
+          { status: 500 }
+        );
+      }
+
+      finalReferenceCheckId = checkData.id;
+
+      // Create the reference record
+      const { error: refError } = await supabase
+        .from('references')
+        .insert({
+          check_id: finalReferenceCheckId,
+          name: referenceData.name,
+          email: referenceData.email,
+          phone: referenceData.phone,
+          status: 'pending',
+        });
+
+      if (refError) {
+        console.error('Error creating reference:', refError);
+        return NextResponse.json(
+          { error: 'Failed to create reference' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Validate that we have a reference check ID
+    if (!finalReferenceCheckId) {
       return NextResponse.json(
-        { error: 'Invalid phone number format. Must be +1XXXXXXXXXX' },
+        { error: 'Reference check ID is required' },
         { status: 400 }
       );
     }
 
-    // Get reference check details from database
-    const { data: refCheck, error: refCheckError } = await supabase
+    // Get reference check and questions
+    const { data: referenceCheck, error: fetchError } = await supabase
       .from('reference_checks')
-      .select('*')
-      .eq('id', referenceCheckId)
+      .select('*, references(*), questions(*)')
+      .eq('id', finalReferenceCheckId)
       .single();
 
-    if (refCheckError || !refCheck) {
+    if (fetchError || !referenceCheck) {
+      console.error('Error fetching reference check:', fetchError);
       return NextResponse.json(
         { error: 'Reference check not found' },
         { status: 404 }
       );
     }
 
-    // Combine standard questions with custom questions
-    const allQuestions = [...STANDARD_QUESTIONS];
-    
-    // Add custom questions if provided
-    if (customQuestions && Array.isArray(customQuestions) && customQuestions.length > 0) {
-      allQuestions.push(...customQuestions);
-    }
-
-    // Build the assistant prompt with job context if provided
-    let assistantPrompt = `You are conducting a professional reference check interview.
-
-Candidate Information:
-- Name: ${refCheck.candidate_name || 'the candidate'}
-- Position Applied For: ${refCheck.position_title || 'Not specified'}
-`;
-
-    // Add job description context if provided
-    if (jobDescription && jobDescription.trim()) {
-      assistantPrompt += `
-Job Description:
-${jobDescription.trim()}
-
-Please use this job description as context when asking questions and evaluating the candidate's fit for this specific role.
-`;
-    }
-
-    assistantPrompt += `
-Reference Questions:
-Please ask the following questions in a natural, conversational manner:
-
-${allQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
-
-Interview Guidelines:
-- Start by confirming you're speaking with ${refereeName || 'the reference'}
-- Be professional, warm, and conversational
-- Listen carefully to each response
-- Ask natural follow-up questions to get detailed, specific examples
-- If the job description was provided, use it to ask targeted follow-up questions about relevant skills and experience
-- Take note of specific examples, achievements, and concerns
-- Keep the total call duration under 20 minutes
-- Thank them sincerely at the end for their time
-
-Important: Focus on getting concrete examples and specific details rather than general statements.
-`;
-
-    // Create assistant in Vapi
-    const assistantResponse = await fetch('https://api.vapi.ai/assistant', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${VAPI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: `Reference Check - ${refCheck.candidate_name || 'Candidate'} - ${new Date().toISOString().split('T')[0]}`,
-        model: {
-          provider: 'openai',
-          model: 'gpt-4',
-          temperature: 0.7,
-        },
-        voice: {
-          provider: 'elevenlabs',
-          voiceId: 'rachel', // Professional female voice
-        },
-        firstMessage: `Hi, this is the VoiceRef automated reference checking system. I'm calling to conduct a reference check for ${refCheck.candidate_name || 'a candidate who has applied for a position'}. Am I speaking with ${refereeName || 'the right person'}?`,
-        systemPrompt: assistantPrompt,
-      }),
-    });
-
-    if (!assistantResponse.ok) {
-      const errorText = await assistantResponse.text();
-      console.error('Vapi assistant creation failed:', errorText);
-      return NextResponse.json(
-        { error: 'Failed to create AI assistant' },
-        { status: 500 }
-      );
-    }
-
-    const assistant = await assistantResponse.json();
-
-    // Save phone check to database with all the context
-    const { data: phoneCheck, error: dbError } = await supabase
+    // Create the phone reference check record
+    const { data: phoneCheck, error: phoneCheckError } = await supabase
       .from('phone_reference_checks')
       .insert({
-        reference_check_id: referenceCheckId,
+        reference_check_id: finalReferenceCheckId,
         phone_number: phoneNumber,
         scheduled_time: scheduledTime,
-        vapi_assistant_id: assistant.id,
         status: 'scheduled',
-        referee_name: refereeName,
-        referee_email: refereeEmail,
+        referee_name: referenceData?.name || referenceCheck.references?.[0]?.name,
+        referee_email: referenceData?.email || referenceCheck.references?.[0]?.email,
         metadata: {
-          standard_questions: STANDARD_QUESTIONS,
-          custom_questions: customQuestions || [],
-          job_description: jobDescription || null,
-          candidate_name: refCheck.candidate_name,
-          position_title: refCheck.position_title,
-          total_questions: allQuestions.length
-        }
+          custom_questions: customQuestions,
+          candidate_name: candidateData?.name || referenceCheck.candidate_name,
+          position: candidateData?.position || referenceCheck.position,
+          job_description: candidateData?.jobDescription || referenceCheck.job_description,
+        },
       })
       .select()
       .single();
 
-    if (dbError) {
-      console.error('Database insert error:', dbError);
+    if (phoneCheckError) {
+      console.error('Error creating phone check:', phoneCheckError);
       return NextResponse.json(
-        { error: 'Failed to save phone check to database' },
+        { error: 'Failed to schedule phone call' },
         { status: 500 }
       );
     }
 
-    // Update reference check status
-    try {
-      await supabase
-        .from('reference_checks')
-        .update({
-          status: 'phone_scheduled',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', referenceCheckId);
-    } catch (err) {
-      console.log('Could not update reference_checks status (column may not exist)');
-    }
+    // Prepare questions for VAPI assistant
+    const standardQuestions = referenceCheck.questions?.map((q: any) => q.text) || [];
+    const allQuestions = [...standardQuestions, ...customQuestions.filter((q: string) => q.trim())];
+
+    // Create VAPI assistant with custom questions
+    const vapiAssistant = await createVAPIAssistant({
+      candidateName: candidateData?.name || referenceCheck.candidate_name,
+      position: candidateData?.position || referenceCheck.position,
+      refereeName: referenceData?.name || referenceCheck.references?.[0]?.name,
+      questions: allQuestions,
+      phoneCheckId: phoneCheck.id,
+    });
+
+    // Update phone check with VAPI assistant ID
+    await supabase
+      .from('phone_reference_checks')
+      .update({ vapi_assistant_id: vapiAssistant.id })
+      .eq('id', phoneCheck.id);
 
     return NextResponse.json({
       success: true,
       phoneCheckId: phoneCheck.id,
-      assistantId: assistant.id,
+      referenceCheckId: finalReferenceCheckId,
       scheduledTime: scheduledTime,
-      questionsCount: {
-        standard: STANDARD_QUESTIONS.length,
-        custom: customQuestions?.length || 0,
-        total: allQuestions.length
-      },
-      message: 'Phone reference check scheduled successfully',
+      message: 'Phone call scheduled successfully',
     });
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error scheduling phone check:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
+}
+
+async function createVAPIAssistant({
+  candidateName,
+  position,
+  refereeName,
+  questions,
+  phoneCheckId,
+}: {
+  candidateName: string;
+  position: string;
+  refereeName: string;
+  questions: string[];
+  phoneCheckId: string;
+}) {
+  const questionsText = questions
+    .map((q, i) => `${i + 1}. ${q}`)
+    .join('\n');
+
+  const systemPrompt = `You are conducting a professional reference check phone interview.
+
+CANDIDATE INFORMATION:
+- Name: ${candidateName}
+- Position: ${position}
+
+REFERENCE CONTACT:
+- Name: ${refereeName}
+
+YOUR TASK:
+1. Introduce yourself professionally
+2. Confirm you're speaking with ${refereeName}
+3. Ask for consent to proceed with the reference check
+4. Ask each of these questions and listen carefully to responses:
+
+${questionsText}
+
+5. Thank them for their time
+
+IMPORTANT:
+- Be professional and conversational
+- Allow natural responses
+- Ask relevant follow-up questions if needed
+- Keep the interview focused but friendly
+- Total interview should be 10-20 minutes`;
+
+  const response = await fetch('https://api.vapi.ai/assistant', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: `Reference Check - ${candidateName}`,
+      model: {
+        provider: 'openai',
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+        ],
+      },
+      voice: {
+        provider: 'elevenlabs',
+        voiceId: 'IKne3meq5aSn9XLyUdCD', // Professional female voice
+      },
+      firstMessage: `Hi, this is calling from VoiceRef. I'm conducting a reference check for ${candidateName}. Am I speaking with ${refereeName}?`,
+      serverUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/vapi`,
+      serverUrlSecret: process.env.VAPI_WEBHOOK_SECRET,
+      endCallFunctionEnabled: true,
+      recordingEnabled: true,
+      metadata: {
+        phoneCheckId,
+        candidateName,
+        position,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('VAPI error:', error);
+    throw new Error('Failed to create VAPI assistant');
+  }
+
+  return response.json();
 }
