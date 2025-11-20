@@ -23,6 +23,7 @@
     "@supabase/supabase-js": "^2.38.4",
     "resend": "^2.1.0",
     "uuid": "^9.0.1",
-    "@types/uuid": "^9.0.7"
+    "@types/uuid": "^9.0.7",
+    "@clerk/nextjs": "^5.0.0"
   }
 }
