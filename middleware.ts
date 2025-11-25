@@ -7,6 +7,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/vapi(.*)',
   '/api/phone-reference(.*)',
   '/reference(.*)',
+  '/candidate(.*)',
 ])
 
 export default clerkMiddleware((auth, request) => {
