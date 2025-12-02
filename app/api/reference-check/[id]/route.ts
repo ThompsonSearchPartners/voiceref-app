@@ -1,47 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await context.params;
-    const referenceCheckId = params.id;
+    // ✅ FIX: Await params for Next.js 14
+    const { id } = await context.params
 
-    // Get reference check data
-    const { data: checkData, error } = await supabase
+    console.log('API: Fetching reference check with ID:', id)
+
+    // Query Supabase
+    const { data, error } = await supabase
       .from('reference_checks')
       .select('*')
-      .eq('id', referenceCheckId)
-      .single();
+      .eq('id', id)
+      .single()
 
-    if (error || !checkData) {
+    if (error || !data) {
+      console.log('API: Reference check not found:', error)
       return NextResponse.json(
         { error: 'Reference check not found' },
         { status: 404 }
-      );
+      )
     }
 
-    // Check if already completed or expired
-    if (checkData.status === 'completed') {
-      return NextResponse.json(
-        { error: 'This reference check has already been completed' },
-        { status: 410 }
-      );
-    }
+    console.log('API: Reference check found:', data)
+    return NextResponse.json(data)
 
-    return NextResponse.json(checkData);
   } catch (error) {
-    console.error('Error fetching reference check:', error);
+    console.error('API: Error fetching reference check:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
