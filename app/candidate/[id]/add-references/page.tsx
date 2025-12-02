@@ -27,7 +27,6 @@ export default function AddReferencesPage() {
   ])
 
   useEffect(() => {
-    // ✅ FIX: Only load if params.id exists
     if (params.id) {
       loadReferenceCheck()
     } else {
@@ -37,7 +36,6 @@ export default function AddReferencesPage() {
   }, [params.id])
 
   const loadReferenceCheck = async () => {
-    // ✅ FIX: Double-check params.id exists before API call
     if (!params.id) {
       setError('This link is invalid or has expired.')
       setLoading(false)
@@ -45,20 +43,20 @@ export default function AddReferencesPage() {
     }
 
     try {
-      console.log('Fetching reference check:', params.id) // Debug log
-      const response = await fetch(`/api/reference-check/${params.id}`)
+      console.log('Fetching reference check:', params.id)
+      const response = await fetch(`/api/reference-checks/${params.id}`)
       
-      console.log('Response status:', response.status) // Debug log
+      console.log('Response status:', response.status)
       
       if (!response.ok) {
         throw new Error('Reference check not found')
       }
       
       const data = await response.json()
-      console.log('Reference check data:', data) // Debug log
+      console.log('Reference check data:', data)
       setReferenceCheck(data)
     } catch (err) {
-      console.error('Error loading reference check:', err) // Debug log
+      console.error('Error loading reference check:', err)
       setError('This link is invalid or has expired.')
     } finally {
       setLoading(false)
@@ -84,7 +82,6 @@ export default function AddReferencesPage() {
   }
 
   const validateForm = () => {
-    // Check if at least 2 references are filled
     const filledReferences = references.filter(ref => 
       ref.name.trim() && ref.email.trim() && ref.phone.trim() && ref.relationship.trim()
     )
@@ -94,7 +91,6 @@ export default function AddReferencesPage() {
       return false
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     for (const ref of filledReferences) {
       if (!emailRegex.test(ref.email)) {
