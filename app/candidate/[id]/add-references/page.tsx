@@ -27,19 +27,38 @@ export default function AddReferencesPage() {
   ])
 
   useEffect(() => {
-    loadReferenceCheck()
+    // ✅ FIX: Only load if params.id exists
+    if (params.id) {
+      loadReferenceCheck()
+    } else {
+      setError('This link is invalid or has expired.')
+      setLoading(false)
+    }
   }, [params.id])
 
   const loadReferenceCheck = async () => {
+    // ✅ FIX: Double-check params.id exists before API call
+    if (!params.id) {
+      setError('This link is invalid or has expired.')
+      setLoading(false)
+      return
+    }
+
     try {
+      console.log('Fetching reference check:', params.id) // Debug log
       const response = await fetch(`/api/reference-check/${params.id}`)
+      
+      console.log('Response status:', response.status) // Debug log
+      
       if (!response.ok) {
         throw new Error('Reference check not found')
       }
       
       const data = await response.json()
+      console.log('Reference check data:', data) // Debug log
       setReferenceCheck(data)
     } catch (err) {
+      console.error('Error loading reference check:', err) // Debug log
       setError('This link is invalid or has expired.')
     } finally {
       setLoading(false)
