@@ -5,64 +5,30 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await context.params
+  const { id } = await context.params
+  
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
-    console.log('=== API DEBUG START ===')
-    console.log('1. Requested ID:', id)
-    console.log('2. Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log('3. Has Anon Key:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  console.log('Looking for ID:', id)
 
-    // Check if env vars exist
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.log('ERROR: Missing Supabase environment variables')
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      )
-    }
+  // Remove .single() to see what we get
+  const { data, error } = await supabase
+    .from('reference_checks')
+    .select('*')
+    .eq('id', id)
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
+  console.log('Query result:', { data, error, count: data?.length })
 
-    console.log('4. Querying Supabase...')
-
-    const { data, error } = await supabase
-      .from('reference_checks')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    console.log('5. Supabase response:', { data, error })
-
-    if (error) {
-      console.log('ERROR from Supabase:', error)
-      return NextResponse.json(
-        { error: 'Reference check not found', details: error.message },
-        { status: 404 }
-      )
-    }
-
-    if (!data) {
-      console.log('ERROR: No data returned')
-      return NextResponse.json(
-        { error: 'Reference check not found' },
-        { status: 404 }
-      )
-    }
-
-    console.log('6. SUCCESS - returning data')
-    console.log('=== API DEBUG END ===')
-    
-    return NextResponse.json(data)
-
-  } catch (error) {
-    console.error('CATCH ERROR:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: String(error) },
-      { status: 500 }
-    )
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Not found', searched_id: id }, { status: 404 })
+  }
+
+  return NextResponse.json(data[0])
 }
