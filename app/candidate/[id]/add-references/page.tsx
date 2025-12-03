@@ -44,7 +44,7 @@ export default function AddReferencesPage() {
 
     try {
       console.log('Fetching reference check:', params.id)
-      const response = await fetch(`/api/reference-checks/${params.id}`)
+      const response = await fetch(`/api/reference-check/${params.id}`)
       
       console.log('Response status:', response.status)
       
