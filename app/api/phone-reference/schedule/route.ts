@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     
     // Create Vapi Assistant
     const questionsText = questions.map((q: string, i: number) => `${i + 1}. ${q}`).join('\n');
+    
     const systemPrompt = `You are conducting a professional employment reference check for ${candidateName || 'the candidate'}. You are speaking with ${referenceName}.
 
 Your objectives:
@@ -59,17 +60,18 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
     
     const assistant = await assistantResponse.json();
 
-    // Store in database - call will be triggered by cron job at scheduled time
+    // Store in database
     const { data: phoneCheck, error: dbError } = await supabase
-      .from('phone_reference_checks')
+      .from('scheduled_calls')
       .insert({
-        reference_check_id: null,
+        reference_id: referenceCheckId,
         reference_name: referenceName,
         reference_phone: formattedPhone,
         reference_email: referenceEmail,
         scheduled_time: scheduledTime,
         vapi_assistant_id: assistant.id,
-        call_status: 'scheduled'
+        call_status: 'scheduled',
+        call_completed: false
       })
       .select()
       .single();
@@ -82,14 +84,14 @@ Keep the tone professional but friendly. Make them feel comfortable sharing hone
       }, { status: 500 });
     }
 
-    // Call will be triggered by cron job at the scheduled time
-    // No immediate Vapi call - the /api/cron/trigger-calls endpoint handles this
+    console.log('Successfully created scheduled call:', phoneCheck);
 
     return NextResponse.json({ 
       success: true, 
-      phoneReferenceCheckId: phoneCheck.id, 
+      scheduledCallId: phoneCheck.id, 
       scheduledTime 
     });
+
   } catch (error: any) {
     console.error('Error scheduling call:', error);
     return NextResponse.json({ error: error.message || 'Failed to schedule call' }, { status: 500 });
