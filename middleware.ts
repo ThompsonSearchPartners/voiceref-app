@@ -5,11 +5,14 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/candidate(.*)',
   '/reference(.*)',
-  '/api/reference-check(.*)',  // ← Add this line
+  '/api/reference-check(.*)',
   '/api/create-candidate-request',
   '/api/submit-references',
+  '/api/phone-reference(.*)',
+  '/api/schedule-phone-check',
   '/api/webhooks(.*)',
   '/api/vapi(.*)',
+  '/api/cron(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
