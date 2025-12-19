@@ -6,35 +6,36 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const VAPI_API_KEY = '22fe7d9a-288d-4946-a020-6aa8581bb251';
-const CRON_SECRET = process.env.CRON_SECRET || 'your-secret-key-here'; // Set this in your env vars
-
 export async function GET(request: NextRequest) {
-  // Verify cron secret for security
+  // Verify cron secret - check both header AND query param
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+  const { searchParams } = new URL(request.url);
+  const secretParam = searchParams.get('secret');
+  
+  const expectedSecret = process.env.CRON_SECRET;
+  const providedSecret = authHeader?.replace('Bearer ', '') || secretParam;
+  
+  if (providedSecret !== expectedSecret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const now = new Date();
-    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+    
+    console.log('Checking for scheduled calls at:', now.toISOString());
 
-    // Get all scheduled calls that should happen in the next 5 minutes
+    // Get all scheduled calls that should happen now (scheduled_time <= now)
     const { data: scheduledCalls, error: fetchError } = await supabase
-      .from('phone_reference_checks')
+      .from('scheduled_calls')
       .select('*')
-      .eq('status', 'scheduled')
-      .gte('scheduled_time', now.toISOString())
-      .lte('scheduled_time', fiveMinutesFromNow.toISOString());
+      .eq('call_status', 'scheduled')
+      .eq('call_completed', false)
+      .lte('scheduled_time', now.toISOString());
 
     if (fetchError) {
       console.error('Error fetching scheduled calls:', fetchError);
       return NextResponse.json(
-        { error: 'Failed to fetch scheduled calls' },
+        { error: 'Failed to fetch scheduled calls', details: fetchError.message },
         { status: 500 }
       );
     }
@@ -42,57 +43,67 @@ export async function GET(request: NextRequest) {
     if (!scheduledCalls || scheduledCalls.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'No calls scheduled for the next 5 minutes',
+        message: 'No calls to process',
         processed: 0,
       });
     }
 
-    console.log(`Found ${scheduledCalls.length} calls to process`);
+    console.log(`Found ${scheduledCalls.length} calls to process:`, scheduledCalls);
 
     const results = await Promise.allSettled(
       scheduledCalls.map(async (call) => {
         try {
-          // Initiate the call via Vapi
-          const response = await fetch(`https://api.vapi.ai/call/${call.vapi_call_id}`, {
+          console.log(`Processing call ${call.id} for ${call.reference_name}`);
+
+          // Create the Vapi call
+          const vapiResponse = await fetch('https://api.vapi.ai/call/phone', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${VAPI_API_KEY}`,
+              'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               assistantId: call.vapi_assistant_id,
-              phoneNumberId: '88a8d0a5-f407-4198-a1ab-8b9c5fd1a7b7',
+              phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
               customer: {
-                number: call.phone_number,
-                name: call.referee_name,
+                number: call.reference_phone,
+                name: call.reference_name,
               },
             }),
           });
 
-          if (!response.ok) {
-            const errorText = await response.text();
+          if (!vapiResponse.ok) {
+            const errorText = await vapiResponse.text();
+            console.error('Vapi API error:', errorText);
             throw new Error(`Vapi API error: ${errorText}`);
           }
 
-          // Update status to in_progress
-          await supabase
-            .from('phone_reference_checks')
+          const vapiCall = await vapiResponse.json();
+          console.log('Vapi call created:', vapiCall);
+
+          // Update the record with call info
+          const { error: updateError } = await supabase
+            .from('scheduled_calls')
             .update({
-              status: 'in_progress',
-              actual_call_time: now.toISOString(),
+              call_status: 'in_progress',
+              vapi_call_id: vapiCall.id,
             })
             .eq('id', call.id);
 
-          return { success: true, callId: call.id };
+          if (updateError) {
+            console.error('Error updating call status:', updateError);
+          }
+
+          return { success: true, callId: call.id, vapiCallId: vapiCall.id };
+
         } catch (error: any) {
           console.error(`Error initiating call ${call.id}:`, error);
           
           // Update status to failed
           await supabase
-            .from('phone_reference_checks')
+            .from('scheduled_calls')
             .update({
-              status: 'failed',
-              error_message: error.message,
+              call_status: 'failed',
             })
             .eq('id', call.id);
 
@@ -102,7 +113,9 @@ export async function GET(request: NextRequest) {
     );
 
     const successful = results.filter((r) => r.status === 'fulfilled' && r.value.success).length;
-    const failed = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
+    const failed = results.length - successful;
+
+    console.log(`Processed: ${successful} successful, ${failed} failed`);
 
     return NextResponse.json({
       success: true,
@@ -121,7 +134,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Also support POST for manual triggering
 export async function POST(request: NextRequest) {
   return GET(request);
 }
