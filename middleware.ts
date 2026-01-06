@@ -5,21 +5,10 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/candidate(.*)',
   '/reference(.*)',
-  '/api/reference-check(.*)',
-  '/api/create-candidate-request',
-  '/api/submit-references',
-  '/api/phone-reference(.*)',
-  '/api/schedule-phone-check',
-  '/api/webhooks(.*)',
-  '/api/vapi(.*)',
-  '/api/cron(.*)',
+  '/api/(.*)',
 ])
 
-export default clerkMiddleware((auth, request) => {
-  if (!isPublicRoute(request)) {
-    auth().protect()
-  }
-})
+export default clerkMiddleware()
 
 export const config = {
   matcher: [
