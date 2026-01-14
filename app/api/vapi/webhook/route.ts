@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Vapi webhook event:', event.type);
-    console.log('Full event:', JSON.stringify(event, null, 2));
 
     const eventType = event.type || event.message?.type;
     const call = event.call || event.message?.call;
@@ -51,9 +50,6 @@ export async function POST(request: NextRequest) {
 
       const callData = await callResponse.json();
       console.log('Got call data from Vapi');
-      console.log('Call data keys:', Object.keys(callData));
-      console.log('Transcript exists?', !!callData.transcript);
-      console.log('Messages exists?', !!callData.messages);
       
       // Find the scheduled call in database
       const { data: scheduledCall, error: findError } = await supabase
@@ -67,22 +63,30 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Format transcript - try multiple possible formats
+      // Format transcript with better formatting
       let transcriptText = '';
       
       // Try callData.transcript first
       if (callData.transcript && Array.isArray(callData.transcript)) {
         console.log('Using callData.transcript format');
         transcriptText = callData.transcript
-          .map((t: any) => `${t.role === 'assistant' ? 'AI' : 'Reference'}: ${t.content || t.text || t.message || ''}`)
-          .join('\n\n');
+          .map((t: any) => {
+            const role = t.role === 'assistant' ? '🤖 AI Interviewer' : '👤 Reference';
+            const message = t.content || t.text || t.message || '';
+            return `${role}:\n${message}`;
+          })
+          .join('\n\n---\n\n');
       }
       // Try callData.messages
       else if (callData.messages && Array.isArray(callData.messages)) {
         console.log('Using callData.messages format');
         transcriptText = callData.messages
-          .map((m: any) => `${m.role === 'assistant' ? 'AI' : 'Reference'}: ${m.content || m.text || m.message || ''}`)
-          .join('\n\n');
+          .map((m: any) => {
+            const role = m.role === 'assistant' ? '🤖 AI Interviewer' : '👤 Reference';
+            const message = m.content || m.text || m.message || '';
+            return `${role}:\n${message}`;
+          })
+          .join('\n\n---\n\n');
       }
       // Try call.transcript
       else if (call.transcript) {
@@ -114,52 +118,10 @@ export async function POST(request: NextRequest) {
         console.log('Sending transcript email...');
         
         const emailBody = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Reference Check Completed</h2>
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">Reference Check Completed</h2>
             
-            <p><strong>Reference:</strong> ${scheduledCall.reference_name}</p>
-            <p><strong>Phone:</strong> ${scheduledCall.reference_phone}</p>
-            <p><strong>Duration:</strong> ${Math.round((callData.duration || callData.durationSeconds || 0) / 60)} minutes</p>
-            
-            <h3>Transcript:</h3>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; white-space: pre-wrap;">
-${transcriptText}
-            </div>
-          </div>
-        `;
-
-        try {
-          const emailResponse = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: 'VoiceRef <onboarding@resend.dev>',
-              to: 'conor@thompsonsearchpartners.com',
-              subject: `Reference Check Completed - ${scheduledCall.reference_name}`,
-              html: emailBody,
-            }),
-          });
-
-          if (emailResponse.ok) {
-            console.log('Email sent successfully');
-          } else {
-            const errorText = await emailResponse.text();
-            console.error('Email send failed:', emailResponse.status, errorText);
-          }
-        } catch (emailError) {
-          console.error('Email error:', emailError);
-        }
-      } else {
-        console.log('No transcript to send, length:', transcriptText.length);
-      }
-    }
-    
-    return NextResponse.json({ received: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    return NextResponse.json({ received: true });
-  }
-}
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Reference:</strong> ${scheduledCall.reference_name}</p>
+              <p style="margin: 5px 0;"><strong>Phone:</strong> ${scheduledCall.reference_phone}</p>
+              <p style="margin: 5px 0;"><strong>Duration:</strong> ${Math.round((callData.
