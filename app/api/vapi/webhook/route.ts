@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Vapi webhook event:', event.type);
+    console.log('Full event:', JSON.stringify(event, null, 2));
 
     const eventType = event.type || event.message?.type;
     const call = event.call || event.message?.call;
@@ -50,6 +51,9 @@ export async function POST(request: NextRequest) {
 
       const callData = await callResponse.json();
       console.log('Got call data from Vapi');
+      console.log('Call data keys:', Object.keys(callData));
+      console.log('Transcript exists?', !!callData.transcript);
+      console.log('Messages exists?', !!callData.messages);
       
       // Find the scheduled call in database
       const { data: scheduledCall, error: findError } = await supabase
@@ -63,21 +67,38 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Format transcript
+      // Format transcript - try multiple possible formats
       let transcriptText = '';
+      
+      // Try callData.transcript first
       if (callData.transcript && Array.isArray(callData.transcript)) {
+        console.log('Using callData.transcript format');
         transcriptText = callData.transcript
-          .map((t: any) => `${t.role === 'assistant' ? 'AI' : 'Reference'}: ${t.content || t.text || ''}`)
+          .map((t: any) => `${t.role === 'assistant' ? 'AI' : 'Reference'}: ${t.content || t.text || t.message || ''}`)
           .join('\n\n');
       }
+      // Try callData.messages
+      else if (callData.messages && Array.isArray(callData.messages)) {
+        console.log('Using callData.messages format');
+        transcriptText = callData.messages
+          .map((m: any) => `${m.role === 'assistant' ? 'AI' : 'Reference'}: ${m.content || m.text || m.message || ''}`)
+          .join('\n\n');
+      }
+      // Try call.transcript
+      else if (call.transcript) {
+        console.log('Using call.transcript format');
+        transcriptText = typeof call.transcript === 'string' ? call.transcript : JSON.stringify(call.transcript, null, 2);
+      }
+
+      console.log('Transcript length:', transcriptText.length);
 
       // Update database
       const { error: updateError } = await supabase
         .from('scheduled_calls')
         .update({
           call_completed: true,
-          call_duration: callData.duration || 0,
-          transcript: transcriptText,
+          call_duration: callData.duration || callData.durationSeconds || 0,
+          transcript: transcriptText || 'No transcript available',
           vapi_call_id: call.id
         })
         .eq('id', scheduledCall.id);
@@ -89,7 +110,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Send email with transcript
-      if (transcriptText) {
+      if (transcriptText && transcriptText.length > 10) {
         console.log('Sending transcript email...');
         
         const emailBody = `
@@ -98,7 +119,7 @@ export async function POST(request: NextRequest) {
             
             <p><strong>Reference:</strong> ${scheduledCall.reference_name}</p>
             <p><strong>Phone:</strong> ${scheduledCall.reference_phone}</p>
-            <p><strong>Duration:</strong> ${Math.round((callData.duration || 0) / 60)} minutes</p>
+            <p><strong>Duration:</strong> ${Math.round((callData.duration || callData.durationSeconds || 0) / 60)} minutes</p>
             
             <h3>Transcript:</h3>
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; white-space: pre-wrap;">
@@ -116,7 +137,7 @@ ${transcriptText}
             },
             body: JSON.stringify({
               from: 'VoiceRef <onboarding@resend.dev>',
-              to: 'conor@thompsonsearchpartners.com', // Your email
+              to: 'conor@thompsonsearchpartners.com',
               subject: `Reference Check Completed - ${scheduledCall.reference_name}`,
               html: emailBody,
             }),
@@ -125,17 +146,20 @@ ${transcriptText}
           if (emailResponse.ok) {
             console.log('Email sent successfully');
           } else {
-            console.error('Email send failed:', await emailResponse.text());
+            const errorText = await emailResponse.text();
+            console.error('Email send failed:', emailResponse.status, errorText);
           }
         } catch (emailError) {
           console.error('Email error:', emailError);
         }
+      } else {
+        console.log('No transcript to send, length:', transcriptText.length);
       }
     }
     
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Webhook error:', error);
-    return NextResponse.json({ received: true }); // Always return 200 to Vapi
+    return NextResponse.json({ received: true });
   }
 }
