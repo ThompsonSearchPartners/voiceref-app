@@ -1,10 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,38 +68,65 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Format transcript with better formatting
-      let transcriptText = '';
+      // Get raw transcript
+      let rawTranscript = '';
       
-      // Try callData.transcript first
       if (callData.transcript && Array.isArray(callData.transcript)) {
-        console.log('Using callData.transcript format');
-        transcriptText = callData.transcript
+        rawTranscript = callData.transcript
           .map((t: any) => {
-            const role = t.role === 'assistant' ? '🤖 AI Interviewer' : '👤 Reference';
+            const role = t.role === 'assistant' ? 'AI' : 'Reference';
             const message = t.content || t.text || t.message || '';
-            return `${role}:\n${message}`;
+            return `${role}: ${message}`;
           })
-          .join('\n\n---\n\n');
-      }
-      // Try callData.messages
-      else if (callData.messages && Array.isArray(callData.messages)) {
-        console.log('Using callData.messages format');
-        transcriptText = callData.messages
+          .join('\n');
+      } else if (callData.messages && Array.isArray(callData.messages)) {
+        rawTranscript = callData.messages
           .map((m: any) => {
-            const role = m.role === 'assistant' ? '🤖 AI Interviewer' : '👤 Reference';
+            const role = m.role === 'assistant' ? 'AI' : 'Reference';
             const message = m.content || m.text || m.message || '';
-            return `${role}:\n${message}`;
+            return `${role}: ${message}`;
           })
-          .join('\n\n---\n\n');
-      }
-      // Try call.transcript
-      else if (call.transcript) {
-        console.log('Using call.transcript format');
-        transcriptText = typeof call.transcript === 'string' ? call.transcript : JSON.stringify(call.transcript, null, 2);
+          .join('\n');
+      } else if (call.transcript) {
+        rawTranscript = typeof call.transcript === 'string' ? call.transcript : JSON.stringify(call.transcript);
       }
 
-      console.log('Transcript length:', transcriptText.length);
+      console.log('Raw transcript length:', rawTranscript.length);
+
+      // Format transcript with AI
+      let formattedTranscript = rawTranscript;
+      
+      if (rawTranscript && rawTranscript.length > 50) {
+        try {
+          console.log('Formatting transcript with AI...');
+          const completion = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [
+              {
+                role: "system",
+                content: `You are formatting a reference check transcript. Clean it up and present it as a professional Q&A format with clear speaker labels and line breaks. Use this format:
+
+**AI Interviewer:** [question]
+
+**Reference:** [answer]
+
+Make it easy to read and professional. Keep all the content, just organize it cleanly.`
+              },
+              {
+                role: "user",
+                content: rawTranscript
+              }
+            ],
+            temperature: 0.3
+          });
+
+          formattedTranscript = completion.choices[0]?.message?.content || rawTranscript;
+          console.log('Transcript formatted successfully');
+        } catch (aiError) {
+          console.error('AI formatting error:', aiError);
+          // Fall back to raw transcript if AI fails
+        }
+      }
 
       // Update database
       const { error: updateError } = await supabase
@@ -102,7 +134,7 @@ export async function POST(request: NextRequest) {
         .update({
           call_completed: true,
           call_duration: callData.duration || callData.durationSeconds || 0,
-          transcript: transcriptText || 'No transcript available',
+          transcript: formattedTranscript || 'No transcript available',
           vapi_call_id: call.id
         })
         .eq('id', scheduledCall.id);
@@ -114,7 +146,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Send email with transcript
-      if (transcriptText && transcriptText.length > 10) {
+      if (formattedTranscript && formattedTranscript.length > 10) {
         console.log('Sending transcript email...');
         
         const emailBody = `
@@ -124,4 +156,48 @@ export async function POST(request: NextRequest) {
             <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 5px 0;"><strong>Reference:</strong> ${scheduledCall.reference_name}</p>
               <p style="margin: 5px 0;"><strong>Phone:</strong> ${scheduledCall.reference_phone}</p>
-              <p style="margin: 5px 0;"><strong>Duration:</strong> ${Math.round((callData.
+              <p style="margin: 5px 0;"><strong>Duration:</strong> ${Math.round((callData.duration || callData.durationSeconds || 0) / 60)} minutes</p>
+            </div>
+            
+            <h3 style="color: #1e40af; margin-top: 30px;">Transcript:</h3>
+            <div style="background: #ffffff; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; line-height: 1.8; white-space: pre-wrap;">
+${formattedTranscript.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+            </div>
+          </div>
+        `;
+
+        try {
+          const emailResponse = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: 'VoiceRef <onboarding@resend.dev>',
+              to: 'conor@thompsonsearchpartners.com',
+              subject: `Reference Check Completed - ${scheduledCall.reference_name}`,
+              html: emailBody,
+            }),
+          });
+
+          if (emailResponse.ok) {
+            console.log('Email sent successfully');
+          } else {
+            const errorText = await emailResponse.text();
+            console.error('Email send failed:', emailResponse.status, errorText);
+          }
+        } catch (emailError) {
+          console.error('Email error:', emailError);
+        }
+      } else {
+        console.log('No transcript to send');
+      }
+    }
+    
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return NextResponse.json({ received: true });
+  }
+}
