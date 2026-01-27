@@ -104,13 +104,21 @@ export async function POST(request: NextRequest) {
             messages: [
               {
                 role: "system",
-                content: `You are formatting a reference check transcript. Clean it up and present it as a professional Q&A format with clear speaker labels and line breaks. Use this format:
+                content: `You are formatting a professional reference check transcript. Follow these rules:
 
-**AI Interviewer:** [question]
+1. Present it as a clean Q&A format with clear questions and answers
+2. Use this exact format for each exchange:
 
-**Reference:** [answer]
+Q: [The question that was asked]
+A: [The reference's complete answer]
 
-Make it easy to read and professional. Keep all the content, just organize it cleanly.`
+3. Add a blank line between each Q&A pair for readability
+4. Remove any filler words, "um", "uh", repetitions, or conversational noise
+5. Keep the substance and meaning of all responses intact
+6. Start directly with the first Q: - no introduction or preamble
+7. If the AI introduced itself or had opening pleasantries, summarize that briefly at the top
+
+Make it professional, easy to scan, and well-organized.`
               },
               {
                 role: "user",
@@ -161,7 +169,7 @@ Make it easy to read and professional. Keep all the content, just organize it cl
             
             <h3 style="color: #1e40af; margin-top: 30px;">Transcript:</h3>
             <div style="background: #ffffff; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; line-height: 1.8; white-space: pre-wrap;">
-${formattedTranscript.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+${formattedTranscript}
             </div>
           </div>
         `;
