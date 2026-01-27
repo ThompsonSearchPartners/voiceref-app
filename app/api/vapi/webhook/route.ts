@@ -68,70 +68,92 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Get raw transcript
+      // Get raw transcript - format as Q&A first
       let rawTranscript = '';
       
       if (callData.transcript && Array.isArray(callData.transcript)) {
-        rawTranscript = callData.transcript
-          .map((t: any) => {
-            const role = t.role === 'assistant' ? 'AI' : 'Reference';
-            const message = t.content || t.text || t.message || '';
-            return `${role}: ${message}`;
-          })
-          .join('\n');
+        const lines: string[] = [];
+        callData.transcript.forEach((t: any) => {
+          const message = (t.content || t.text || t.message || '').trim();
+          if (message) {
+            const label = t.role === 'assistant' ? 'AI Interviewer' : 'Reference';
+            lines.push(`${label}: ${message}`);
+          }
+        });
+        rawTranscript = lines.join('\n\n');
       } else if (callData.messages && Array.isArray(callData.messages)) {
-        rawTranscript = callData.messages
-          .map((m: any) => {
-            const role = m.role === 'assistant' ? 'AI' : 'Reference';
-            const message = m.content || m.text || m.message || '';
-            return `${role}: ${message}`;
-          })
-          .join('\n');
+        const lines: string[] = [];
+        callData.messages.forEach((m: any) => {
+          const message = (m.content || m.text || m.message || '').trim();
+          if (message) {
+            const label = m.role === 'assistant' ? 'AI Interviewer' : 'Reference';
+            lines.push(`${label}: ${message}`);
+          }
+        });
+        rawTranscript = lines.join('\n\n');
       } else if (call.transcript) {
         rawTranscript = typeof call.transcript === 'string' ? call.transcript : JSON.stringify(call.transcript);
       }
 
       console.log('Raw transcript length:', rawTranscript.length);
+      console.log('Raw transcript preview:', rawTranscript.substring(0, 200));
 
       // Format transcript with AI
-      let formattedTranscript = rawTranscript;
+      let formattedTranscript = rawTranscript || 'No transcript available';
       
       if (rawTranscript && rawTranscript.length > 50) {
         try {
-          console.log('Formatting transcript with AI...');
+          console.log('Calling OpenAI to format transcript...');
+          
           const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-4o-mini",
             messages: [
               {
                 role: "system",
-                content: `You are formatting a professional reference check transcript. Follow these rules:
+                content: `You are formatting a professional reference check transcript. Follow these exact rules:
 
-1. Present it as a clean Q&A format with clear questions and answers
-2. Use this exact format for each exchange:
+1. Format as clean Q&A with each exchange separated by a blank line
+2. Use this format:
 
-Q: [The question that was asked]
-A: [The reference's complete answer]
+Q: [Clean, professional version of the question]
+A: [Clean, professional version of the answer - remove filler words like um, uh, you know, etc.]
 
-3. Add a blank line between each Q&A pair for readability
-4. Remove any filler words, "um", "uh", repetitions, or conversational noise
-5. Keep the substance and meaning of all responses intact
-6. Start directly with the first Q: - no introduction or preamble
-7. If the AI introduced itself or had opening pleasantries, summarize that briefly at the top
+3. Rules:
+   - Remove conversational filler and repetitions
+   - Keep all substantive content
+   - Make it professional and easy to read
+   - Start immediately with the first Q: - no preamble
+   - Maintain the meaning and tone of responses
+   
+Example output format:
+Q: Can you tell me about your working relationship with the candidate?
+A: I worked with them for three years as their direct manager in the engineering department.
 
-Make it professional, easy to scan, and well-organized.`
+Q: What were their main strengths?
+A: They excelled at problem-solving and always delivered projects on time.`
               },
               {
                 role: "user",
                 content: rawTranscript
               }
             ],
-            temperature: 0.3
+            temperature: 0.3,
+            max_tokens: 2000
           });
 
-          formattedTranscript = completion.choices[0]?.message?.content || rawTranscript;
-          console.log('Transcript formatted successfully');
-        } catch (aiError) {
-          console.error('AI formatting error:', aiError);
+          const aiResponse = completion.choices[0]?.message?.content;
+          
+          if (aiResponse && aiResponse.trim().length > 0) {
+            formattedTranscript = aiResponse.trim();
+            console.log('OpenAI formatting SUCCESS');
+            console.log('Formatted preview:', formattedTranscript.substring(0, 200));
+          } else {
+            console.log('OpenAI returned empty response, using raw transcript');
+          }
+          
+        } catch (aiError: any) {
+          console.error('OpenAI formatting ERROR:', aiError.message);
+          console.error('Error details:', aiError);
           // Fall back to raw transcript if AI fails
         }
       }
@@ -142,7 +164,7 @@ Make it professional, easy to scan, and well-organized.`
         .update({
           call_completed: true,
           call_duration: callData.duration || callData.durationSeconds || 0,
-          transcript: formattedTranscript || 'No transcript available',
+          transcript: formattedTranscript,
           vapi_call_id: call.id
         })
         .eq('id', scheduledCall.id);
