@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^4.27.1",
+    "@clerk/nextjs": "^6.37.0",
     "@supabase/supabase-js": "^2.38.4",
     "lucide-react": "^0.263.1",
     "next": "14.2.25",
