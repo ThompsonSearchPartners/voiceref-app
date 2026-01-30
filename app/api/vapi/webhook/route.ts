@@ -204,7 +204,7 @@ ${formattedTranscript}
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: 'VoiceRef <onboarding@resend.dev>',
+              from: 'VoiceRef <noreply@voiceref.io>',
               to: 'conor@thompsonsearchpartners.com',
               subject: `Reference Check Completed - ${scheduledCall.reference_name}`,
               html: emailBody,
