@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Get raw transcript - format as Q&A first
+      // Get raw transcript
       let rawTranscript = '';
       
       if (callData.transcript && Array.isArray(callData.transcript)) {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         callData.transcript.forEach((t: any) => {
           const message = (t.content || t.text || t.message || '').trim();
           if (message) {
-            const label = t.role === 'assistant' ? 'AI Interviewer' : 'Reference';
+            const label = t.role === 'assistant' ? 'INTERVIEWER' : 'REFERENCE';
             lines.push(`${label}: ${message}`);
           }
         });
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         callData.messages.forEach((m: any) => {
           const message = (m.content || m.text || m.message || '').trim();
           if (message) {
-            const label = m.role === 'assistant' ? 'AI Interviewer' : 'Reference';
+            const label = m.role === 'assistant' ? 'INTERVIEWER' : 'REFERENCE';
             lines.push(`${label}: ${message}`);
           }
         });
@@ -96,10 +96,9 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('Raw transcript length:', rawTranscript.length);
-      console.log('Raw transcript preview:', rawTranscript.substring(0, 200));
 
       // Format transcript with AI
-      let formattedTranscript = rawTranscript || 'No transcript available';
+      let formattedTranscript = 'No transcript available';
       
       if (rawTranscript && rawTranscript.length > 50) {
         try {
@@ -110,27 +109,24 @@ export async function POST(request: NextRequest) {
             messages: [
               {
                 role: "system",
-                content: `You are formatting a professional reference check transcript. Follow these exact rules:
+                content: `You are formatting a professional reference check transcript into a clean Q&A format.
 
-1. Format as clean Q&A with each exchange separated by a blank line
-2. Use this format:
+RULES:
+1. Extract each question asked by the INTERVIEWER
+2. Extract the corresponding answer from the REFERENCE
+3. Format as:
 
-Q: [Clean, professional version of the question]
-A: [Clean, professional version of the answer - remove filler words like um, uh, you know, etc.]
+Q: [Question text]
+A: [Answer text]
 
-3. Rules:
-   - Remove conversational filler and repetitions
-   - Keep all substantive content
-   - Make it professional and easy to read
-   - Start immediately with the first Q: - no preamble
-   - Maintain the meaning and tone of responses
-   
-Example output format:
-Q: Can you tell me about your working relationship with the candidate?
-A: I worked with them for three years as their direct manager in the engineering department.
+Q: [Next question]
+A: [Next answer]
 
-Q: What were their main strengths?
-A: They excelled at problem-solving and always delivered projects on time.`
+4. Remove filler words (um, uh, you know)
+5. Clean up grammar but keep the meaning
+6. Skip the introduction/greeting - start with the first real question
+7. Each Q&A pair should be separated by a blank line
+8. Make answers complete sentences when possible`
               },
               {
                 role: "user",
@@ -138,7 +134,7 @@ A: They excelled at problem-solving and always delivered projects on time.`
               }
             ],
             temperature: 0.3,
-            max_tokens: 2000
+            max_tokens: 3000
           });
 
           const aiResponse = completion.choices[0]?.message?.content;
@@ -146,15 +142,14 @@ A: They excelled at problem-solving and always delivered projects on time.`
           if (aiResponse && aiResponse.trim().length > 0) {
             formattedTranscript = aiResponse.trim();
             console.log('OpenAI formatting SUCCESS');
-            console.log('Formatted preview:', formattedTranscript.substring(0, 200));
           } else {
             console.log('OpenAI returned empty response, using raw transcript');
+            formattedTranscript = rawTranscript;
           }
           
         } catch (aiError: any) {
           console.error('OpenAI formatting ERROR:', aiError.message);
-          console.error('Error details:', aiError);
-          // Fall back to raw transcript if AI fails
+          formattedTranscript = rawTranscript;
         }
       }
 
@@ -179,6 +174,13 @@ A: They excelled at problem-solving and always delivered projects on time.`
       if (formattedTranscript && formattedTranscript.length > 10) {
         console.log('Sending transcript email...');
         
+        // Convert line breaks to HTML for email
+        const htmlTranscript = formattedTranscript
+          .replace(/\n\n/g, '</p><p style="margin: 16px 0;">')
+          .replace(/\n/g, '<br>')
+          .replace(/^Q:/gm, '<strong>Q:</strong>')
+          .replace(/^A:/gm, '<strong>A:</strong>');
+        
         const emailBody = `
           <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">Reference Check Completed</h2>
@@ -189,9 +191,9 @@ A: They excelled at problem-solving and always delivered projects on time.`
               <p style="margin: 5px 0;"><strong>Duration:</strong> ${Math.round((callData.duration || callData.durationSeconds || 0) / 60)} minutes</p>
             </div>
             
-            <h3 style="color: #1e40af; margin-top: 30px;">Transcript:</h3>
-            <div style="background: #ffffff; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; line-height: 1.8; white-space: pre-wrap;">
-${formattedTranscript}
+            <h3 style="color: #1e40af; margin-top: 30px;">Transcript</h3>
+            <div style="background: #ffffff; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; line-height: 1.8;">
+              <p style="margin: 16px 0;">${htmlTranscript}</p>
             </div>
           </div>
         `;
@@ -220,8 +222,6 @@ ${formattedTranscript}
         } catch (emailError) {
           console.error('Email error:', emailError);
         }
-      } else {
-        console.log('No transcript to send');
       }
     }
     
