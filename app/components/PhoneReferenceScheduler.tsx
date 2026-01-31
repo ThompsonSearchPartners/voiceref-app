@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Phone, Clock, User, Mail } from 'lucide-react';
+import { Calendar, Phone, Clock, User, Mail, CheckCircle } from 'lucide-react';
 
 interface PhoneReferenceSchedulerProps {
   referenceCheckId: string;
@@ -89,14 +89,6 @@ export default function PhoneReferenceScheduler({
       }
       setSuccess(true);
       if (onScheduled) onScheduled();
-      setTimeout(() => {
-        setReferenceName('');
-        setReferencePhone('');
-        setReferenceEmail('');
-        setScheduledDate('');
-        setScheduledTime('');
-        setSuccess(false);
-      }, 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to schedule call');
     } finally {
@@ -115,6 +107,63 @@ export default function PhoneReferenceScheduler({
 
   const minDateTime = getMinDateTime();
 
+  // Show confirmation screen after successful scheduling
+  if (success) {
+    const formattedDate = new Date(`${scheduledDate}T${scheduledTime}`).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const formattedTime = new Date(`${scheduledDate}T${scheduledTime}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    return (
+      <div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-lg border border-gray-200 text-center">
+        <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Call Scheduled!</h2>
+        <p className="text-lg text-gray-600 mb-8">
+          Your reference check call has been scheduled successfully.
+        </p>
+        
+        <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left">
+          <h3 className="font-semibold text-gray-900 mb-4">Call Details:</h3>
+          <div className="space-y-3">
+            <p className="flex items-center text-gray-700">
+              <Calendar className="w-5 h-5 mr-3 text-blue-600" />
+              <span><strong>Date:</strong> {formattedDate}</span>
+            </p>
+            <p className="flex items-center text-gray-700">
+              <Clock className="w-5 h-5 mr-3 text-blue-600" />
+              <span><strong>Time:</strong> {formattedTime}</span>
+            </p>
+            <p className="flex items-center text-gray-700">
+              <Phone className="w-5 h-5 mr-3 text-blue-600" />
+              <span><strong>Phone:</strong> {referencePhone}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left">
+          <h3 className="font-semibold text-blue-900 mb-2">What happens next:</h3>
+          <ul className="text-blue-800 space-y-2 text-sm">
+            <li>✓ You will receive an automated call at the scheduled time</li>
+            <li>✓ The call will take approximately 10-15 minutes</li>
+            <li>✓ Our AI will ask you {questions.length} questions about {candidateName}</li>
+            <li>✓ Just answer honestly and naturally</li>
+          </ul>
+        </div>
+
+        <p className="mt-8 text-gray-500 text-sm">
+          You can close this page now. Thank you for your time!
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg border border-gray-200">
       <div className="mb-6">
@@ -125,14 +174,6 @@ export default function PhoneReferenceScheduler({
           An AI-powered call will be scheduled to interview you about {candidateName}.
         </p>
       </div>
-
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800 font-medium">
-            ✓ Call scheduled successfully!
-          </p>
-        </div>
-      )}
 
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -234,7 +275,7 @@ export default function PhoneReferenceScheduler({
 
         <button
           onClick={handleSchedule}
-          disabled={loading || success}
+          disabled={loading}
           className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
         >
           {loading ? (
@@ -242,8 +283,6 @@ export default function PhoneReferenceScheduler({
               <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
               Scheduling...
             </>
-          ) : success ? (
-            '✓ Scheduled!'
           ) : (
             <>
               <Phone className="h-5 w-5" />
