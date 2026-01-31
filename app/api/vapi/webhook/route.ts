@@ -13,14 +13,12 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    // Get secret from header
     const vapiSecret = request.headers.get('x-vapi-secret');
     if (vapiSecret !== process.env.VAPI_WEBHOOK_SECRET) {
       console.error('Invalid webhook secret');
       return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
     }
     
-    // Parse body
     let event;
     try {
       event = await request.json();
@@ -39,11 +37,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // Handle call.ended
     if (eventType === 'call.ended' || eventType === 'end-of-call-report') {
       console.log('Processing call end for:', call.id);
 
-      // Fetch full call data from Vapi
       const callResponse = await fetch(`https://api.vapi.ai/call/${call.id}`, {
         headers: { Authorization: `Bearer ${process.env.VAPI_API_KEY}` }
       });
@@ -56,7 +52,6 @@ export async function POST(request: NextRequest) {
       const callData = await callResponse.json();
       console.log('Got call data from Vapi');
       
-      // Find the scheduled call in database
       const { data: scheduledCall, error: findError } = await supabase
         .from('scheduled_calls')
         .select('*')
@@ -76,21 +71,21 @@ export async function POST(request: NextRequest) {
         callData.transcript.forEach((t: any) => {
           const message = (t.content || t.text || t.message || '').trim();
           if (message) {
-            const label = t.role === 'assistant' ? 'INTERVIEWER' : 'REFERENCE';
+            const label = t.role === 'assistant' ? 'AI' : 'PERSON';
             lines.push(`${label}: ${message}`);
           }
         });
-        rawTranscript = lines.join('\n\n');
+        rawTranscript = lines.join('\n');
       } else if (callData.messages && Array.isArray(callData.messages)) {
         const lines: string[] = [];
         callData.messages.forEach((m: any) => {
           const message = (m.content || m.text || m.message || '').trim();
           if (message) {
-            const label = m.role === 'assistant' ? 'INTERVIEWER' : 'REFERENCE';
+            const label = m.role === 'assistant' ? 'AI' : 'PERSON';
             lines.push(`${label}: ${message}`);
           }
         });
-        rawTranscript = lines.join('\n\n');
+        rawTranscript = lines.join('\n');
       } else if (call.transcript) {
         rawTranscript = typeof call.transcript === 'string' ? call.transcript : JSON.stringify(call.transcript);
       }
@@ -109,31 +104,42 @@ export async function POST(request: NextRequest) {
             messages: [
               {
                 role: "system",
-                content: `You are formatting a professional reference check transcript into a clean Q&A format.
+                content: `You are converting a phone reference check transcript into a clean, professional format.
 
-RULES:
-1. Extract each question asked by the INTERVIEWER
-2. Extract the corresponding answer from the REFERENCE
-3. Format as:
+CRITICAL RULES:
+1. Output ONLY the question and answer pairs - no introduction, no preamble, no summary
+2. Start immediately with the first VoiceRef: question
+3. Each question from the AI interviewer becomes "VoiceRef:" 
+4. Each answer from the person becomes "Reference:"
+5. VoiceRef and Reference should be on SEPARATE lines
+6. Combine follow-up questions and their answers into single pairs when they're about the same topic
+7. Clean up the answers - remove filler words (um, uh, yeah, you know), fix grammar, make complete sentences
+8. Skip the greeting/intro - start with the first real reference question
+9. Skip the goodbye at the end
 
-Q: [Question text]
-A: [Answer text]
+FORMAT (follow exactly - VoiceRef and Reference on separate lines):
+VoiceRef: [Question]
+Reference: [Answer]
 
-Q: [Next question]
-A: [Next answer]
+VoiceRef: [Question]
+Reference: [Answer]
 
-4. Remove filler words (um, uh, you know)
-5. Clean up grammar but keep the meaning
-6. Skip the introduction/greeting - start with the first real question
-7. Each Q&A pair should be separated by a blank line
-8. Make answers complete sentences when possible`
+EXAMPLE OUTPUT:
+VoiceRef: Can you describe your working relationship with the candidate?
+Reference: He reported directly to me for three years. He was excellent - very strong technically and collaborated well with the team.
+
+VoiceRef: What were their primary responsibilities?
+Reference: He designed process automation equipment using SolidWorks, focusing on material handling systems for heavy industry.
+
+VoiceRef: What would you say are their greatest strengths?
+Reference: His technical skills and ability to understand complex engineering principles. He worked on a large project for a gold mining company involving material handling equipment for heavy industry.`
               },
               {
                 role: "user",
                 content: rawTranscript
               }
             ],
-            temperature: 0.3,
+            temperature: 0.2,
             max_tokens: 3000
           });
 
@@ -143,7 +149,7 @@ A: [Next answer]
             formattedTranscript = aiResponse.trim();
             console.log('OpenAI formatting SUCCESS');
           } else {
-            console.log('OpenAI returned empty response, using raw transcript');
+            console.log('OpenAI returned empty response');
             formattedTranscript = rawTranscript;
           }
           
@@ -174,12 +180,24 @@ A: [Next answer]
       if (formattedTranscript && formattedTranscript.length > 10) {
         console.log('Sending transcript email...');
         
-        // Convert line breaks to HTML for email
+        // Format for HTML email - VoiceRef in blue, Reference in dark gray
         const htmlTranscript = formattedTranscript
-          .replace(/\n\n/g, '</p><p style="margin: 16px 0;">')
-          .replace(/\n/g, '<br>')
-          .replace(/^Q:/gm, '<strong>Q:</strong>')
-          .replace(/^A:/gm, '<strong>A:</strong>');
+          .split('\n\n')
+          .map(block => {
+            const lines = block.split('\n');
+            let html = '';
+            lines.forEach(line => {
+              if (line.startsWith('VoiceRef:')) {
+                const question = line.replace('VoiceRef:', '').trim();
+                html += `<p style="margin: 0 0 4px 0; color: #2563eb; font-weight: 600;">VoiceRef: ${question}</p>`;
+              } else if (line.startsWith('Reference:')) {
+                const answer = line.replace('Reference:', '').trim();
+                html += `<p style="margin: 0 0 24px 0; color: #374151;">Reference: ${answer}</p>`;
+              }
+            });
+            return html;
+          })
+          .join('');
         
         const emailBody = `
           <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -191,9 +209,9 @@ A: [Next answer]
               <p style="margin: 5px 0;"><strong>Duration:</strong> ${Math.round((callData.duration || callData.durationSeconds || 0) / 60)} minutes</p>
             </div>
             
-            <h3 style="color: #1e40af; margin-top: 30px;">Transcript</h3>
+            <h3 style="color: #1e40af; margin-top: 30px; margin-bottom: 20px;">Interview Transcript</h3>
             <div style="background: #ffffff; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; line-height: 1.8;">
-              <p style="margin: 16px 0;">${htmlTranscript}</p>
+              ${htmlTranscript}
             </div>
           </div>
         `;
