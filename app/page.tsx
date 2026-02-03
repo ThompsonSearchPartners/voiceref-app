@@ -72,7 +72,7 @@ export default function Home() {
             onClick={handleGetStarted}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700 flex items-center mx-auto"
           >
-            Start Reference Check - $149
+            Start Free Trial
             <ArrowRight className="w-5 h-5 ml-2" />
           </button>
         </div>
@@ -158,43 +158,107 @@ export default function Home() {
           </div>
         </div>
 
+        {/* New Pricing Section */}
         <div className="bg-white rounded-2xl p-12 shadow-xl mb-16">
-          <h3 className="text-3xl font-bold text-center mb-8">Simple, Transparent Pricing</h3>
-          <div className="max-w-md mx-auto text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-4">$149</div>
-            <div className="text-lg text-gray-600 mb-6">per candidate reference check</div>
-            <ul className="text-left space-y-3 mb-8">
-              <li className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                AI-generated custom questions for any role
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                Candidate adds their own references
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                Professional AI phone interviewer
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                Complete transcripts of all interviews
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                Role-specific analysis and insights
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                Detailed report within 24 hours
-              </li>
-            </ul>
-            <button
-              onClick={handleGetStarted}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg text-lg font-medium hover:bg-blue-700"
-            >
-              Start Reference Check
-            </button>
+          <h3 className="text-3xl font-bold text-center mb-4">Simple, Transparent Pricing</h3>
+          <p className="text-center text-gray-600 mb-12">Start with a free trial, then choose the plan that fits your needs</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Free Trial */}
+            <div className="border-2 border-gray-200 rounded-xl p-8 text-center hover:border-blue-300 transition-colors">
+              <h4 className="text-xl font-semibold mb-2">Free Trial</h4>
+              <div className="text-4xl font-bold text-gray-900 mb-2">$0</div>
+              <div className="text-gray-600 mb-6">1 reference check</div>
+              <ul className="text-left space-y-3 mb-8">
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  Full AI phone interview
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  Complete transcript
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  Custom questions
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  No credit card required
+                </li>
+              </ul>
+              <button
+                onClick={handleGetStarted}
+                className="w-full border-2 border-blue-600 text-blue-600 py-3 px-6 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+              >
+                Start Free Trial
+              </button>
+            </div>
+
+            {/* Starter */}
+            <div className="border-2 border-blue-600 rounded-xl p-8 text-center relative bg-blue-50">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                Most Popular
+              </div>
+              <h4 className="text-xl font-semibold mb-2">Starter</h4>
+              <div className="text-4xl font-bold text-gray-900 mb-2">$99<span className="text-lg font-normal text-gray-600">/mo</span></div>
+              <div className="text-gray-600 mb-6">5 reference checks per month</div>
+              <ul className="text-left space-y-3 mb-8">
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  Everything in Free Trial
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  5 reference checks/month
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  Email support
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  $15 per additional check
+                </li>
+              </ul>
+              <button
+                onClick={handleGetStarted}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Get Started
+              </button>
+            </div>
+
+            {/* Professional */}
+            <div className="border-2 border-gray-200 rounded-xl p-8 text-center hover:border-blue-300 transition-colors">
+              <h4 className="text-xl font-semibold mb-2">Professional</h4>
+              <div className="text-4xl font-bold text-gray-900 mb-2">$199<span className="text-lg font-normal text-gray-600">/mo</span></div>
+              <div className="text-gray-600 mb-6">15 reference checks per month</div>
+              <ul className="text-left space-y-3 mb-8">
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  Everything in Starter
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  15 reference checks/month
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  Priority support
+                </li>
+                <li className="flex items-center text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  $15 per additional check
+                </li>
+              </ul>
+              <button
+                onClick={handleGetStarted}
+                className="w-full border-2 border-blue-600 text-blue-600 py-3 px-6 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+              >
+                Get Started
+              </button>
+            </div>
           </div>
         </div>
 
@@ -209,7 +273,7 @@ export default function Home() {
             onClick={handleGetStarted}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700"
           >
-            Get Started Today
+            Start Your Free Trial
           </button>
         </div>
       </div>
