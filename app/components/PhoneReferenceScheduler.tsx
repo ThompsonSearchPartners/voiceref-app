@@ -99,9 +99,17 @@ export default function PhoneReferenceScheduler({
   const getMinDateTime = () => {
     const now = new Date();
     now.setHours(now.getHours() + 1);
+    
+    // Use local date formatting instead of ISO (which converts to UTC)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
     return {
-      date: now.toISOString().split('T')[0],
-      time: now.toTimeString().slice(0, 5),
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`,
     };
   };
 
